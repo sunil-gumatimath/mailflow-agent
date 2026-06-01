@@ -42,7 +42,7 @@ export async function callGemini(prompt, systemInstruction = SYSTEM_INSTRUCTION)
     throw new Error('Gemini API key not configured. Please set it in the extension settings.');
   }
 
-  const url = `${GEMINI_API_BASE}/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const url = `${GEMINI_API_BASE}/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   const body = {
     system_instruction: {
@@ -60,11 +60,32 @@ export async function callGemini(prompt, systemInstruction = SYSTEM_INSTRUCTION)
     },
   };
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  let response;
+  let retries = 3;
+  let delayMs = 1000;
+  for (let i = 0; i < retries; i++) {
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      // Retry on transient errors (503 Service Unavailable / 429 Rate Limit)
+      if ((response.status === 503 || response.status === 429) && i < retries - 1) {
+        console.warn(`[MailFlow-agent] Gemini API call returned ${response.status}. Retrying in ${delayMs}ms... (Attempt ${i + 1}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        delayMs *= 2;
+        continue;
+      }
+      break;
+    } catch (err) {
+      if (i === retries - 1) throw err;
+      console.warn(`[MailFlow-agent] Gemini API call failed. Retrying in ${delayMs}ms... (Attempt ${i + 1}/${retries})`);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      delayMs *= 2;
+    }
+  }
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));

@@ -97,6 +97,49 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 /**
+ * Resolve email data from either passed content or by fetching from ID/threadId.
+ */
+async function resolveEmailData(data = {}, message = {}) {
+  // Check if we already have the body/payload, subject, and sender
+  const body = data.body || message.body || null;
+  const payload = data.payload || message.payload || null;
+  const subject = data.subject || message.subject || null;
+  const from = data.from || message.from || null;
+
+  if ((body || payload) && subject && from) {
+    return { body, payload, subject, from };
+  }
+
+  // Otherwise, we need to fetch using messageId or threadId
+  let messageId = data.emailId || message.emailId || data.messageId || message.messageId || null;
+  const threadId = data.threadId || message.threadId || null;
+
+  if (!messageId && threadId) {
+    // Get the thread and use the latest message
+    const thread = await gmailApi.getThread(threadId);
+    if (thread?.messages?.length) {
+      const latestMsg = thread.messages[thread.messages.length - 1];
+      messageId = latestMsg.id;
+    }
+  }
+
+  if (messageId) {
+    const msg = await gmailApi.getMessage(messageId);
+    const headers = extractHeaders(msg.payload?.headers);
+    return {
+      body: parseEmailBody(msg.payload),
+      subject: headers.subject || '',
+      from: headers.from || '',
+      emailId: messageId,
+      threadId: msg.threadId || threadId,
+      payload: msg.payload
+    };
+  }
+
+  throw new Error('No email message details or thread ID available.');
+}
+
+/**
  * Route a message to the appropriate handler.
  * Always returns a createResponse(...) object.
  */
@@ -145,7 +188,8 @@ async function handleMessage(message) {
 
       // ── Emails ─────────────────────────────────────────────────────────────
       case MESSAGE_TYPES.GET_EMAILS: {
-        const { query, maxResults } = data;
+        const query = data.query ?? message.query;
+        const maxResults = data.maxResults ?? message.maxResults;
         const stubs = await gmailApi.listMessages(query, maxResults);
         // Hydrate each stub with full message data
         const messages = await Promise.all(
@@ -155,43 +199,103 @@ async function handleMessage(message) {
       }
 
       case MESSAGE_TYPES.GET_EMAIL: {
-        const msg = await gmailApi.getMessage(data.messageId, data.format);
+        const messageId = data.messageId ?? message.messageId;
+        const format = data.format ?? message.format;
+        const msg = await gmailApi.getMessage(messageId, format);
         return createResponse(true, msg);
       }
 
       case MESSAGE_TYPES.GET_THREAD: {
-        const thread = await gmailApi.getThread(data.threadId, data.format);
+        const threadId = data.threadId ?? message.threadId;
+        const format = data.format ?? message.format;
+        const thread = await gmailApi.getThread(threadId, format);
         return createResponse(true, thread);
       }
 
       // ── Search ─────────────────────────────────────────────────────────────
       case MESSAGE_TYPES.SEARCH_EMAILS: {
-        let query = data.query ?? '';
+        let query = data.query ?? message.query ?? '';
+        const maxResults = data.maxResults ?? message.maxResults;
+        const naturalLanguage = data.naturalLanguage ?? message.naturalLanguage;
 
         // If the caller wants natural-language translation
-        if (data.naturalLanguage) {
-          query = await translateToGmailQuery(data.query);
+        if (naturalLanguage) {
+          query = await translateToGmailQuery(query);
         }
 
-        const results = await gmailApi.searchMessages(query, data.maxResults);
+        const results = await gmailApi.searchMessages(query, maxResults);
         return createResponse(true, { query, results });
+      }
+
+      // ── Gmail Context Change (from content script) ──────────────────────────
+      case 'GMAIL_CONTEXT_CHANGE': {
+        const context = data.context ?? message.context;
+        if (context && context.view === 'thread' && context.threadId) {
+          try {
+            const thread = await gmailApi.getThread(context.threadId);
+            if (thread?.messages?.length) {
+              const latestMsg = thread.messages[thread.messages.length - 1];
+              const headers = extractHeaders(latestMsg.payload?.headers);
+              const from = headers.from || '';
+              const subject = headers.subject || '';
+              const body = parseEmailBody(latestMsg.payload);
+              
+              let priority = 'NORMAL';
+              let category = 'WORK';
+              
+              try {
+                const apiKey = await getApiKey();
+                if (apiKey) {
+                  const classification = await classifyEmail(sanitizeForAI(body), subject, from);
+                  priority = classification.priority || 'NORMAL';
+                  category = classification.category || 'WORK';
+                }
+              } catch (aiErr) {
+                console.warn('[MailFlow-agent] Context auto-classification failed:', aiErr);
+              }
+              
+              chrome.runtime.sendMessage({
+                type: MESSAGE_TYPES.EMAIL_CONTEXT_UPDATE,
+                context: {
+                  threadId: context.threadId,
+                  emailId: latestMsg.id,
+                  subject,
+                  from,
+                  body,
+                  priority,
+                  category
+                }
+              }).catch(() => {});
+            }
+          } catch (err) {
+            console.error('[MailFlow-agent] GMAIL_CONTEXT_CHANGE processing failed:', err);
+          }
+        } else {
+          chrome.runtime.sendMessage({
+            type: MESSAGE_TYPES.EMAIL_CONTEXT_CLEAR
+          }).catch(() => {});
+        }
+        return createResponse(true);
       }
 
       // ── AI operations ──────────────────────────────────────────────────────
       case MESSAGE_TYPES.CLASSIFY_EMAIL: {
-        const sanitized = sanitizeForAI(data.body ?? parseEmailBody(data.payload));
-        const classification = await classifyEmail(sanitized, data.subject, data.from);
+        const resolved = await resolveEmailData(data, message);
+        const sanitized = sanitizeForAI(resolved.body ?? parseEmailBody(resolved.payload));
+        const classification = await classifyEmail(sanitized, resolved.subject, resolved.from);
         return createResponse(true, classification);
       }
 
       case MESSAGE_TYPES.SUMMARIZE_EMAIL: {
-        const sanitized = sanitizeForAI(data.body ?? parseEmailBody(data.payload));
-        const summary = await summarizeEmail(sanitized, data.subject, data.from);
+        const resolved = await resolveEmailData(data, message);
+        const sanitized = sanitizeForAI(resolved.body ?? parseEmailBody(resolved.payload));
+        const summary = await summarizeEmail(sanitized, resolved.subject, resolved.from);
         return createResponse(true, { reply: summary, summary });
       }
 
       case MESSAGE_TYPES.SUMMARIZE_THREAD: {
-        const threadMessages = (data.messages ?? []).map((m) => ({
+        const messagesList = data.messages ?? message.messages ?? [];
+        const threadMessages = messagesList.map((m) => ({
           from: m.from,
           subject: m.subject,
           body: sanitizeForAI(m.body),
@@ -201,82 +305,99 @@ async function handleMessage(message) {
       }
 
       case MESSAGE_TYPES.DRAFT_REPLY: {
-        const sanitized = sanitizeForAI(data.body ?? '');
+        const resolved = await resolveEmailData(data, message);
+        const sanitized = sanitizeForAI(resolved.body ?? '');
         const replyBody = await draftReply(
           sanitized,
-          data.subject,
-          data.from,
-          data.instruction,
-          data.userName,
-          data.userSignature,
+          resolved.subject,
+          resolved.from,
+          data.instruction ?? message.instruction ?? '',
+          data.userName ?? message.userName ?? '',
+          data.userSignature ?? message.userSignature ?? '',
         );
         return createResponse(true, { reply: replyBody, replyBody });
       }
 
       case MESSAGE_TYPES.CHAT: {
+        const resolvedMessage = data.message ?? message.message;
+        const resolvedContext = data.emailContext ?? message.emailContext ?? data.context ?? message.context ?? null;
+        const resolvedHistory = data.conversationHistory ?? message.conversationHistory ?? data.history ?? message.history ?? [];
+
         const response = await chatWithAgent(
-          data.message,
-          data.emailContext ?? null,
-          data.conversationHistory ?? [],
+          resolvedMessage,
+          resolvedContext,
+          resolvedHistory,
         );
         return createResponse(true, { reply: response, response });
       }
 
       // ── Queued actions (risk-gated) ────────────────────────────────────────
       case MESSAGE_TYPES.SEND_EMAIL: {
-        const raw = data.raw ?? createMimeMessage(data);
+        const raw = data.raw ?? message.raw ?? createMimeMessage(data);
+        const threadId = data.threadId ?? message.threadId;
+        const reason = data.reason ?? message.reason ?? 'Send email';
         const action = await queueAction({
           type: 'SEND_EMAIL',
-          params: { raw, threadId: data.threadId },
-          reason: data.reason ?? 'Send email',
+          params: { raw, threadId },
+          reason,
           riskLevel: RISK_LEVELS.HIGH,
         });
         return createResponse(true, action);
       }
 
       case MESSAGE_TYPES.TRASH_EMAIL: {
+        const messageId = data.messageId ?? message.messageId;
+        const reason = data.reason ?? message.reason ?? 'Trash email';
         const action = await queueAction({
           type: 'TRASH_EMAIL',
-          params: { messageId: data.messageId },
-          reason: data.reason ?? 'Trash email',
+          params: { messageId },
+          reason,
           riskLevel: RISK_LEVELS.HIGH,
         });
         return createResponse(true, action);
       }
 
       case MESSAGE_TYPES.ARCHIVE_EMAIL: {
+        const messageId = data.messageId ?? message.messageId;
+        const reason = data.reason ?? message.reason ?? 'Archive email';
         const action = await queueAction({
           type: 'ARCHIVE_EMAIL',
-          params: { messageId: data.messageId },
-          reason: data.reason ?? 'Archive email',
+          params: { messageId },
+          reason,
           riskLevel: RISK_LEVELS.MEDIUM,
         });
         return createResponse(true, action);
       }
 
       case MESSAGE_TYPES.LABEL_EMAIL: {
+        const messageId = data.messageId ?? message.messageId;
+        const labelId = data.labelId ?? message.labelId;
+        const reason = data.reason ?? message.reason ?? `Apply label: ${labelId}`;
         const action = await queueAction({
           type: 'LABEL_EMAIL',
-          params: { messageId: data.messageId, labelId: data.labelId },
-          reason: data.reason ?? `Apply label: ${data.labelId}`,
+          params: { messageId, labelId },
+          reason,
           riskLevel: RISK_LEVELS.MEDIUM,
         });
         return createResponse(true, action);
       }
 
       case MESSAGE_TYPES.MARK_READ: {
+        const messageId = data.messageId ?? message.messageId;
+        const reason = data.reason ?? message.reason ?? 'Mark as read';
         const action = await queueAction({
           type: 'MARK_READ',
-          params: { messageId: data.messageId },
-          reason: data.reason ?? 'Mark as read',
+          params: { messageId },
+          reason,
           riskLevel: RISK_LEVELS.MEDIUM,
         });
         return createResponse(true, action);
       }
 
       case MESSAGE_TYPES.CREATE_DRAFT: {
-        const raw = data.raw ?? createMimeMessage(data);
-        const draft = await gmailApi.createDraft(raw, data.threadId);
+        const raw = data.raw ?? message.raw ?? createMimeMessage(data);
+        const threadId = data.threadId ?? message.threadId;
+        const draft = await gmailApi.createDraft(raw, threadId);
         return createResponse(true, draft);
       }
 
@@ -288,12 +409,14 @@ async function handleMessage(message) {
 
       // ── Action queue management ────────────────────────────────────────────
       case MESSAGE_TYPES.APPROVE_ACTION: {
-        const approved = await approveAction(data.actionId);
+        const actionId = data.actionId ?? message.actionId;
+        const approved = await approveAction(actionId);
         return createResponse(true, approved);
       }
 
       case MESSAGE_TYPES.REJECT_ACTION: {
-        const rejected = await rejectAction(data.actionId);
+        const actionId = data.actionId ?? message.actionId;
+        const rejected = await rejectAction(actionId);
         return createResponse(true, rejected);
       }
 
@@ -303,7 +426,8 @@ async function handleMessage(message) {
       }
 
       case MESSAGE_TYPES.GET_ACTION_HISTORY: {
-        const log = await getActionLog(data.limit);
+        const limit = data.limit ?? message.limit;
+        const log = await getActionLog(limit);
         return createResponse(true, { history: log });
       }
 
