@@ -88,29 +88,71 @@ function setupEventListeners() {
   });
 
   dom.btnOpenPanel.addEventListener('click', () => {
-    // Side panel will open if they are on mail.google.com, 
-    // or we can direct them to open Gmail
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const activeTab = tabs[0];
       if (activeTab?.url?.includes('mail.google.com')) {
-        window.close(); // Just close popup, side panel is available
+        if (chrome.sidePanel && typeof chrome.sidePanel.open === 'function') {
+          chrome.sidePanel.open({ tabId: activeTab.id })
+            .then(() => window.close())
+            .catch((e) => {
+              console.error('[MailFlow-agent] Failed to open side panel:', e);
+              window.close();
+            });
+        } else {
+          window.close();
+        }
       } else {
-        chrome.tabs.create({ url: 'https://mail.google.com' });
+        chrome.tabs.create({ url: 'https://mail.google.com' }, (newTab) => {
+          const listener = (tabId, changeInfo) => {
+            if (tabId === newTab.id && changeInfo.status === 'complete') {
+              chrome.tabs.onUpdated.removeListener(listener);
+              if (chrome.sidePanel && typeof chrome.sidePanel.open === 'function') {
+                chrome.sidePanel.open({ tabId }).catch(() => {});
+              }
+            }
+          };
+          chrome.tabs.onUpdated.addListener(listener);
+        });
       }
     });
   });
 
   const triggerChatAction = async (actionText) => {
-    // Check if side panel is open, if not, maybe open it, but side panel API 
-    // doesn't let us force open it easily from popup without user action.
-    // We can focus Gmail tab and show alert.
+    try {
+      await chrome.storage.session.set({ pendingQuickAction: actionText });
+    } catch (e) {}
+
     chrome.tabs.query({ url: '*://mail.google.com/*' }, (tabs) => {
       if (tabs.length > 0) {
-        chrome.tabs.update(tabs[0].id, { active: true });
-        chrome.windows.update(tabs[0].windowId, { focused: true });
-        window.close();
+        const gmailTab = tabs[0];
+        chrome.tabs.update(gmailTab.id, { active: true });
+        chrome.windows.update(gmailTab.windowId, { focused: true });
+        
+        if (chrome.sidePanel && typeof chrome.sidePanel.open === 'function') {
+          chrome.sidePanel.open({ tabId: gmailTab.id })
+            .then(() => {
+              chrome.runtime.sendMessage({
+                type: 'TRIGGER_QUICK_ACTION',
+                action: actionText
+              }).catch(() => {});
+              window.close();
+            })
+            .catch(() => window.close());
+        } else {
+          window.close();
+        }
       } else {
-        chrome.tabs.create({ url: 'https://mail.google.com' });
+        chrome.tabs.create({ url: 'https://mail.google.com' }, (newTab) => {
+          const listener = (tabId, changeInfo) => {
+            if (tabId === newTab.id && changeInfo.status === 'complete') {
+              chrome.tabs.onUpdated.removeListener(listener);
+              if (chrome.sidePanel && typeof chrome.sidePanel.open === 'function') {
+                chrome.sidePanel.open({ tabId }).catch(() => {});
+              }
+            }
+          };
+          chrome.tabs.onUpdated.addListener(listener);
+        });
       }
     });
   };
@@ -129,8 +171,13 @@ function setupEventListeners() {
 }
 
 function sendToBackground(message) {
+  const { type, ...rest } = message;
+  const wrappedMessage = {
+    type,
+    data: rest
+  };
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(message, (response) => {
+    chrome.runtime.sendMessage(wrappedMessage, (response) => {
       if (chrome.runtime.lastError) {
         reject(new Error(chrome.runtime.lastError.message));
       } else if (response && typeof response === 'object' && 'success' in response) {

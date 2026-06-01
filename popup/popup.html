@@ -4,20 +4,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MailFlow-agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
   <header>
     <div class="brand">
       <span class="logo">✦</span>
-      <span class="title">MailFlow-agent</span>
+      <div class="brand-info">
+        <span class="title">MailFlow</span>
+        <span class="tagline">AI Email Assistant</span>
+      </div>
     </div>
-    <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
+    <button class="icon-btn" id="settingsBtn" title="Settings">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+      </svg>
+    </button>
   </header>
 
   <!-- Auth -->
   <section class="auth" id="authSection">
-    <p class="auth-text">Connect your Gmail account to get started.</p>
+    <div class="auth-icon">✉</div>
+    <p class="auth-text">Connect your Gmail account to let AI manage your emails.</p>
     <button class="btn primary" id="authBtn">Sign in with Google</button>
   </section>
 
@@ -31,19 +42,33 @@
 
     <div class="stats" id="statsSection">
       <div class="stat">
+        <span class="stat-icon">📬</span>
         <span class="stat-val" id="unreadCount">—</span>
         <span class="stat-lbl">Unread</span>
       </div>
       <div class="stat">
+        <span class="stat-icon">⏳</span>
         <span class="stat-val" id="pendingCount">—</span>
         <span class="stat-lbl">Pending</span>
       </div>
     </div>
 
     <div class="actions">
-      <button class="action-btn" id="btnSummarize">📝 Summarize</button>
-      <button class="action-btn" id="btnPriority">⚡ Priority</button>
-      <button class="action-btn accent" id="btnOpenPanel">◫ Open Panel</button>
+      <button class="action-btn" id="btnSummarize">
+        <span class="action-icon">📝</span>
+        <span class="action-label">Summarize Inbox</span>
+        <span class="action-arrow">›</span>
+      </button>
+      <button class="action-btn" id="btnPriority">
+        <span class="action-icon">⚡</span>
+        <span class="action-label">Priority Emails</span>
+        <span class="action-arrow">›</span>
+      </button>
+      <button class="action-btn accent" id="btnOpenPanel">
+        <span class="action-icon">◫</span>
+        <span class="action-label">Open Side Panel</span>
+        <span class="action-arrow">›</span>
+      </button>
     </div>
   </section>
 
