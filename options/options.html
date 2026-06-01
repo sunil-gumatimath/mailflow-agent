@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MailFlow-agent — Settings</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="logo">✦</span>
+      <div>
+        <h1>MailFlow-agent</h1>
+        <p class="subtitle">Settings</p>
+      </div>
+    </header>
+
+    <main>
+      <!-- API Key -->
+      <section class="card">
+        <h2>API Configuration</h2>
+        <label for="apiKey">Gemini API Key</label>
+        <div class="input-group">
+          <input type="password" id="apiKey" placeholder="Enter your Gemini API key" autocomplete="off" />
+          <button type="button" class="toggle-btn" id="toggleApiKey">👁</button>
+        </div>
+        <div class="row">
+          <button class="btn secondary sm" id="testApiBtn">Test Connection</button>
+          <span class="status" id="apiStatus"></span>
+        </div>
+      </section>
+
+      <!-- Approvals -->
+      <section class="card">
+        <h2>Approval Settings</h2>
+        <p class="hint">Choose which risk levels need your manual approval.</p>
+        <label class="toggle-row">
+          <div>
+            <span class="toggle-label">Low-risk actions</span>
+            <span class="toggle-hint">Summarize, classify, search</span>
+          </div>
+          <input type="checkbox" id="approvalLow" />
+          <span class="toggle"></span>
+        </label>
+        <label class="toggle-row">
+          <div>
+            <span class="toggle-label">Medium-risk actions</span>
+            <span class="toggle-hint">Archive, label, mark as read</span>
+          </div>
+          <input type="checkbox" id="approvalMedium" checked />
+          <span class="toggle"></span>
+        </label>
+        <label class="toggle-row">
+          <div>
+            <span class="toggle-label">High-risk actions</span>
+            <span class="toggle-hint">Send, delete, forward emails</span>
+          </div>
+          <input type="checkbox" id="approvalHigh" checked />
+          <span class="toggle"></span>
+        </label>
+      </section>
+
+      <!-- Personalization -->
+      <section class="card">
+        <h2>Personalization</h2>
+        <label for="userName">Your Name</label>
+        <input type="text" id="userName" placeholder="Enter your name" />
+        <label for="writingTone">Writing Tone</label>
+        <select id="writingTone">
+          <option value="professional">Professional</option>
+          <option value="casual">Casual</option>
+          <option value="friendly">Friendly</option>
+          <option value="formal">Formal</option>
+        </select>
+        <label for="emailSignature">Email Signature</label>
+        <textarea id="emailSignature" rows="3" placeholder="Your email signature..."></textarea>
+      </section>
+
+      <!-- Preferences -->
+      <section class="card">
+        <h2>Preferences</h2>
+        <label for="maxEmails">Max Emails to Fetch</label>
+        <input type="number" id="maxEmails" min="10" max="500" value="50" class="narrow" />
+        <label>Theme</label>
+        <div class="theme-btns">
+          <button class="theme-btn active" id="themeDark">Dark</button>
+          <button class="theme-btn" id="themeLight">Light</button>
+        </div>
+      </section>
+
+      <!-- Account -->
+      <section class="card">
+        <h2>Account</h2>
+        <div class="account-row">
+          <span class="account-label">Connected Email</span>
+          <span class="account-value" id="accountEmail">Not connected</span>
+        </div>
+        <button class="btn danger-outline sm" id="disconnectBtn">Disconnect Account</button>
+      </section>
+
+      <!-- Action Log -->
+      <section class="card">
+        <div class="card-header">
+          <h2>Action Log</h2>
+          <button class="btn secondary sm" id="clearLogBtn">Clear</button>
+        </div>
+        <div class="log-list" id="actionLog">
+          <div class="empty">📋 No actions recorded</div>
+        </div>
+      </section>
+
+      <!-- About -->
+      <section class="card">
+        <h2>About</h2>
+        <p><strong>MailFlow-agent</strong> v1.0.0</p>
+        <p class="muted">AI-powered email assistant built with Gemini.</p>
+      </section>
+    </main>
+
+    <button class="floating-save" id="saveBtn" hidden>Save Changes</button>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>
