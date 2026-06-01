@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MailFlow-agent — Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="options.css" />
 </head>
 <body>
@@ -11,15 +14,15 @@
     <header>
       <span class="logo">✦</span>
       <div>
-        <h1>MailFlow-agent</h1>
-        <p class="subtitle">Settings</p>
+        <h1>MailFlow</h1>
+        <p class="subtitle">Settings & Configuration</p>
       </div>
     </header>
 
     <main>
       <!-- API Key -->
       <section class="card">
-        <h2>API Configuration</h2>
+        <h2><span class="section-icon">🔑</span> API Configuration</h2>
         <label for="apiKey">Gemini API Key</label>
         <div class="input-group">
           <input type="password" id="apiKey" placeholder="Enter your Gemini API key" autocomplete="off" />
@@ -33,7 +36,7 @@
 
       <!-- Approvals -->
       <section class="card">
-        <h2>Approval Settings</h2>
+        <h2><span class="section-icon">🛡</span> Approval Settings</h2>
         <p class="hint">Choose which risk levels need your manual approval.</p>
         <label class="toggle-row">
           <div>
@@ -63,7 +66,7 @@
 
       <!-- Personalization -->
       <section class="card">
-        <h2>Personalization</h2>
+        <h2><span class="section-icon">✨</span> Personalization</h2>
         <label for="userName">Your Name</label>
         <input type="text" id="userName" placeholder="Enter your name" />
         <label for="writingTone">Writing Tone</label>
@@ -79,7 +82,7 @@
 
       <!-- Preferences -->
       <section class="card">
-        <h2>Preferences</h2>
+        <h2><span class="section-icon">⚙</span> Preferences</h2>
         <label for="maxEmails">Max Emails to Fetch</label>
         <input type="number" id="maxEmails" min="10" max="500" value="50" class="narrow" />
         <label>Theme</label>
@@ -91,7 +94,7 @@
 
       <!-- Account -->
       <section class="card">
-        <h2>Account</h2>
+        <h2><span class="section-icon">👤</span> Account</h2>
         <div class="account-row">
           <span class="account-label">Connected Email</span>
           <span class="account-value" id="accountEmail">Not connected</span>
@@ -102,7 +105,7 @@
       <!-- Action Log -->
       <section class="card">
         <div class="card-header">
-          <h2>Action Log</h2>
+          <h2><span class="section-icon">📋</span> Action Log</h2>
           <button class="btn secondary sm" id="clearLogBtn">Clear</button>
         </div>
         <div class="log-list" id="actionLog">
@@ -112,7 +115,7 @@
 
       <!-- About -->
       <section class="card">
-        <h2>About</h2>
+        <h2><span class="section-icon">ℹ</span> About</h2>
         <p><strong>MailFlow-agent</strong> v1.0.0</p>
         <p class="muted">AI-powered email assistant built with Gemini.</p>
       </section>

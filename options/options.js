@@ -177,18 +177,56 @@ function setupEventListeners() {
     try {
       // Temporarily set it
       await chrome.storage.local.set({ geminiApiKey: apiKey });
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: "Hello" }] }] })
-      });
+      let res;
+      let retries = 3;
+      let delayMs = 1000;
+      for (let i = 0; i < retries; i++) {
+        try {
+          res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              system_instruction: {
+                parts: [{ text: 'You are a helpful email assistant.' }]
+              },
+              contents: [{ parts: [{ text: "Hello" }] }],
+              generationConfig: { temperature: 0.7, maxOutputTokens: 64 }
+            })
+          });
+          
+          // Retry on transient errors (503 Service Unavailable / 429 Rate Limit)
+          if ((res.status === 503 || res.status === 429) && i < retries - 1) {
+            console.warn(`[MailFlow-agent] Gemini API returned ${res.status}. Retrying in ${delayMs}ms... (Attempt ${i + 1}/${retries})`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+            delayMs *= 2;
+            continue;
+          }
+          break;
+        } catch (err) {
+          if (i === retries - 1) throw err;
+          console.warn(`[MailFlow-agent] Fetch failed. Retrying in ${delayMs}ms... (Attempt ${i + 1}/${retries})`);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+          delayMs *= 2;
+        }
+      }
       
-      if (res.ok) {
+      if (res && res.ok) {
         dom.testApiStatus.textContent = '✅ Connection successful';
         dom.testApiStatus.className = 'api-status success';
         showSaveButton();
       } else {
-        dom.testApiStatus.textContent = '❌ Invalid API Key';
+        let reason = res ? `HTTP ${res.status}` : 'Unknown error';
+        if (res) {
+          try {
+            const text = await res.text();
+            console.warn('[Gemini Test API error response]', text);
+            const body = JSON.parse(text);
+            reason = body?.error?.message || body?.message || reason;
+          } catch {
+            // keep HTTP status as fallback
+          }
+        }
+        dom.testApiStatus.textContent = `❌ ${reason}`;
         dom.testApiStatus.className = 'api-status error';
       }
     } catch (e) {
@@ -252,10 +290,21 @@ function hideSaveButton() {
 }
 
 function sendToBackground(message) {
+  const { type, ...rest } = message;
+  const wrappedMessage = {
+    type,
+    data: rest
+  };
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(message, (response) => {
+    chrome.runtime.sendMessage(wrappedMessage, (response) => {
       if (chrome.runtime.lastError) {
         reject(new Error(chrome.runtime.lastError.message));
+      } else if (response && typeof response === 'object' && 'success' in response) {
+        if (response.success) {
+          resolve(response.data);
+        } else {
+          resolve({ error: response.error || 'Unknown error' });
+        }
       } else {
         resolve(response);
       }
