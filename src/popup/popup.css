@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════
-   Popup — Premium Glassmorphic Dark UI
+   Popup — Ant Design Style Clean UI
    Surface-specific styles only. Tokens & base come from /shared.
    ══════════════════════════════════════════════════════════════════ */
 
@@ -11,44 +11,17 @@ body {
   width: 360px;
   overflow: hidden;
   position: relative;
-}
-
-/* ── Animated Background ─────────────────────────────────────── */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 0%, rgba(129, 140, 248, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(167, 139, 250, 0.06) 0%, transparent 60%);
-  pointer-events: none;
-  z-index: 0;
-  animation: bgShift 12s ease-in-out infinite alternate;
+  background: var(--bg-base);
 }
 
 /* ── Header ───────────────────────────────────────────────────── */
 header {
-  position: relative;
-  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 12px 16px;
   background: var(--bg-surface);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
   border-bottom: 1px solid var(--border-subtle);
-}
-
-/* Luminous top edge */
-header::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 16px;
-  right: 16px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(129, 140, 248, 0.2), rgba(167, 139, 250, 0.15), transparent);
 }
 
 .brand {
@@ -58,72 +31,61 @@ header::after {
 }
 
 .logo {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
-  border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, var(--accent) 0%, var(--violet) 100%);
+  border-radius: var(--radius-md);
+  background: var(--accent);
   color: var(--text-on-accent);
   font-size: 14px;
   font-weight: 700;
-  box-shadow:
-    0 6px 20px var(--accent-glow),
-    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-  animation: logoShimmer 4s ease-in-out infinite;
-  position: relative;
+  box-shadow: var(--shadow-sm);
 }
 
 .brand-info { display: flex; flex-direction: column; }
 
 .title {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
   letter-spacing: -0.3px;
   color: var(--text-primary);
 }
 
 .tagline {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--text-muted);
-  letter-spacing: 0.2px;
   margin-top: 1px;
 }
 
 .icon-btn {
-  display: grid;            /* fixed: centers SVG */
+  display: grid;
   place-items: center;
-  background: var(--bg-glass);
-  border: 1px solid var(--border-subtle);
+  background: transparent;
+  border: 1px solid var(--border-medium);
   color: var(--text-secondary);
   cursor: pointer;
   font-size: 14px;
-  padding: 7px 9px;
-  border-radius: var(--radius-sm);
-  transition: all 0.2s var(--ease-out);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+  transition: all var(--duration-base) var(--ease-out);
 }
 
 .icon-btn:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--border-medium);
-  box-shadow: 0 0 12px rgba(129, 140, 248, 0.08);
-  transform: scale(1.05);
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .icon-btn:active {
-  transform: scale(0.95);
+  background: rgba(22, 119, 255, 0.12);
 }
 
 /* ── Auth Section ─────────────────────────────────────────────── */
 .auth {
-  position: relative;
-  z-index: 1;
-  padding: 36px 20px 28px;
+  padding: 40px 24px 32px;
   text-align: center;
-  animation: fadeUp 0.4s ease-out;
+  animation: fadeUp 0.3s var(--ease-out);
 }
 
 .auth-icon {
@@ -133,17 +95,16 @@ header::after {
   display: grid;
   place-items: center;
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--accent-soft), rgba(167, 139, 250, 0.06));
+  background: var(--accent-soft);
   border: 1px solid var(--border-accent);
   font-size: 26px;
-  animation: floatIcon 3s ease-in-out infinite;
 }
 
 .auth-text {
   color: var(--text-secondary);
-  margin-bottom: 18px;
-  font-size: 12.5px;
-  line-height: 1.55;
+  margin-bottom: 20px;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .btn {
@@ -151,60 +112,37 @@ header::after {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 22px;
+  padding: 8px 20px;
   border: none;
   border-radius: var(--radius-md);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s var(--ease-out);
+  transition: all var(--duration-base) var(--ease-out);
   position: relative;
   overflow: hidden;
+  line-height: 1.5714;
 }
 
 .btn.primary {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--violet) 100%);
+  background: var(--accent);
   color: var(--text-on-accent);
-  box-shadow:
-    0 8px 24px var(--accent-glow),
-    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  box-shadow: var(--shadow-accent);
 }
 
 .btn.primary:hover {
-  transform: translateY(-1px);
-  box-shadow:
-    0 12px 32px rgba(129, 140, 248, 0.45),
-    0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+  background: var(--accent-hover);
 }
 
 .btn.primary:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 16px var(--accent-glow);
-}
-
-/* Shimmer sweep on hover */
-.btn.primary::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
-  transition: left 0.5s ease;
-}
-
-.btn.primary:hover::after {
-  left: 100%;
+  background: var(--accent-active);
 }
 
 /* ── Connected Section ────────────────────────────────────────── */
 .connected {
-  position: relative;
-  z-index: 1;
   padding: 14px 16px 16px;
-  animation: fadeUp 0.35s ease-out;
+  animation: fadeUp 0.25s var(--ease-out);
 }
 
 .status-row {
@@ -220,32 +158,29 @@ header::after {
   height: 8px;
   border-radius: 50%;
   background: var(--text-muted);
-  box-shadow: 0 0 0 3px rgba(92, 97, 120, 0.2);
   transition: all 0.3s ease;
   flex-shrink: 0;
 }
 
 .dot.connected {
   background: var(--green);
-  box-shadow:
-    0 0 0 3px rgba(74, 222, 128, 0.15),
-    0 0 10px var(--green-glow);
+  box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.15);
   animation: dotPulse 2.5s ease-in-out infinite;
 }
 
 .status-label {
   font-weight: 500;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
 }
 
 .email {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
   background: var(--bg-glass);
   border: 1px solid var(--border-subtle);
-  padding: 3px 9px;
-  border-radius: 6px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
   margin-left: auto;
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
@@ -260,37 +195,16 @@ header::after {
 
 .stat {
   background: var(--bg-surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   padding: 14px 12px;
   text-align: center;
-  transition: all 0.25s var(--ease-out);
-  position: relative;
-  overflow: hidden;
-}
-
-/* Luminous top edge */
-.stat::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 12px;
-  right: 12px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
-  transition: background 0.3s ease;
+  transition: all var(--duration-base) var(--ease-out);
 }
 
 .stat:hover {
   border-color: var(--border-accent);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(129, 140, 248, 0.08);
-}
-
-.stat:hover::before {
-  background: linear-gradient(90deg, transparent, rgba(129, 140, 248, 0.3), transparent);
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-icon {
@@ -305,20 +219,15 @@ header::after {
   font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.5px;
-  background: linear-gradient(135deg, var(--text-primary), var(--accent));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text-primary);
 }
 
 .stat-lbl {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--text-muted);
-  margin-top: 3px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  margin-top: 2px;
+  font-weight: 500;
 }
 
 /* ── Action Buttons ───────────────────────────────────────────── */
@@ -330,64 +239,31 @@ header::after {
 
 .action-btn {
   width: 100%;
-  padding: 11px 14px;
+  padding: 10px 14px;
   background: var(--bg-surface);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   color: var(--text-primary);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   text-align: left;
-  transition: all 0.2s var(--ease-out);
+  transition: all var(--duration-base) var(--ease-out);
   display: flex;
   align-items: center;
   gap: 10px;
   position: relative;
-  overflow: hidden;
-}
-
-/* Left accent line */
-.action-btn::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 25%;
-  bottom: 25%;
-  width: 2px;
-  border-radius: 2px;
-  background: var(--accent);
-  opacity: 0;
-  transition: all 0.25s ease;
-}
-
-/* Top edge highlight */
-.action-btn::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 12px;
-  right: 12px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
 }
 
 .action-btn:hover {
-  background: var(--bg-elevated);
-  border-color: var(--border-medium);
-  transform: translateX(3px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-.action-btn:hover::before {
-  opacity: 1;
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .action-btn:active {
-  transform: translateX(1px);
+  background: rgba(22, 119, 255, 0.12);
 }
 
 .action-btn .action-icon {
@@ -403,8 +279,8 @@ header::after {
 
 .action-btn .action-arrow {
   color: var(--text-muted);
-  font-size: 11px;
-  transition: transform 0.2s ease;
+  font-size: 14px;
+  transition: all var(--duration-base) ease;
 }
 
 .action-btn:hover .action-arrow {
@@ -413,41 +289,28 @@ header::after {
 }
 
 .action-btn.accent {
-  color: #c4b5fd;
-  background: linear-gradient(135deg, rgba(129, 140, 248, 0.08), rgba(167, 139, 250, 0.04));
+  color: var(--accent);
+  background: var(--accent-soft);
   border-color: var(--border-accent);
 }
 
 .action-btn.accent:hover {
-  background: linear-gradient(135deg, rgba(129, 140, 248, 0.14), rgba(167, 139, 250, 0.08));
-  border-color: rgba(129, 140, 248, 0.35);
-  box-shadow: 0 4px 20px rgba(129, 140, 248, 0.1);
-}
-
-.action-btn.accent::before {
-  background: linear-gradient(180deg, var(--accent), var(--violet));
-  opacity: 0.6;
+  background: rgba(22, 119, 255, 0.12);
+  border-color: var(--accent);
 }
 
 /* ── Footer ───────────────────────────────────────────────────── */
 footer {
-  position: relative;
-  z-index: 1;
-  padding: 11px 16px;
+  padding: 10px 16px;
   border-top: 1px solid var(--border-subtle);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
   text-align: center;
   background: var(--bg-surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
 }
 
 footer strong {
-  background: linear-gradient(135deg, var(--accent), var(--violet));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent);
   font-weight: 600;
 }
 
