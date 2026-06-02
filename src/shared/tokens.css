@@ -1,0 +1,111 @@
+/* ══════════════════════════════════════════════════════════════════
+   Shared Design Tokens — MailFlow-agent
+   Single source of truth for color, radius, and elevation.
+   Each surface CSS @imports this file first.
+   ══════════════════════════════════════════════════════════════════ */
+
+:root,
+:root[data-theme="dark"],
+[data-theme="dark"] {
+  /* ── Backgrounds ──────────────────────────────────────────── */
+  --bg-base: #08090d;
+  --bg-surface: rgba(16, 17, 27, 0.65);
+  --bg-elevated: rgba(22, 23, 38, 0.55);
+  --bg-glass: rgba(255, 255, 255, 0.03);
+  --bg-input: rgba(10, 11, 18, 0.8);
+
+  /* ── Borders ──────────────────────────────────────────────── */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-medium: rgba(255, 255, 255, 0.09);
+  --border-accent: rgba(129, 140, 248, 0.25);
+
+  /* ── Text ─────────────────────────────────────────────────── */
+  --text-primary: #eaeaef;
+  --text-secondary: #9196a8;
+  --text-muted: #7d8395;          /* bumped from #5c6178 — now ~4.6:1 on bg-base */
+  --text-on-accent: #ffffff;
+
+  /* ── Accent / Brand ───────────────────────────────────────── */
+  --accent: #818cf8;
+  --accent-soft: rgba(129, 140, 248, 0.12);
+  --accent-glow: rgba(129, 140, 248, 0.35);
+  --violet: #a78bfa;
+
+  /* ── Semantic ─────────────────────────────────────────────── */
+  --green: #4ade80;
+  --green-glow: rgba(74, 222, 128, 0.3);
+  --green-bg: rgba(74, 222, 128, 0.12);
+  --green-border: rgba(74, 222, 128, 0.2);
+
+  --red: #f87171;
+  --red-bg: rgba(248, 113, 113, 0.1);
+  --red-border: rgba(248, 113, 113, 0.2);
+
+  --yellow: #fbbf24;
+  --yellow-bg: rgba(251, 191, 36, 0.08);
+  --yellow-border: rgba(251, 191, 36, 0.18);
+
+  /* ── Radii ────────────────────────────────────────────────── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 9999px;
+
+  /* ── Shadows ──────────────────────────────────────────────── */
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --shadow-accent: 0 8px 24px var(--accent-glow);
+
+  /* ── Motion ───────────────────────────────────────────────── */
+  --ease-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 0.15s;
+  --duration-base: 0.25s;
+  --duration-slow: 0.4s;
+
+  /* ── Stagger (drives .stagger-N utilities) ───────────────── */
+  --stagger-step: 50ms;
+}
+
+/* ── Light Theme Overrides ─────────────────────────────────────── */
+:root[data-theme="light"],
+[data-theme="light"] {
+  --bg-base: #f5f6fa;
+  --bg-surface: rgba(255, 255, 255, 0.78);
+  --bg-elevated: rgba(255, 255, 255, 0.9);
+  --bg-glass: rgba(0, 0, 0, 0.02);
+  --bg-input: #ffffff;
+
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-medium: rgba(0, 0, 0, 0.1);
+  --border-accent: rgba(99, 102, 241, 0.3);
+
+  --text-primary: #1a1b25;
+  --text-secondary: #5a6075;
+  --text-muted: #6a7088;
+
+  --accent: #6366f1;
+  --accent-soft: rgba(99, 102, 241, 0.1);
+  --accent-glow: rgba(99, 102, 241, 0.3);
+  --violet: #8b5cf6;
+
+  --green: #16a34a;
+  --green-glow: rgba(22, 163, 74, 0.25);
+  --green-bg: rgba(22, 163, 74, 0.1);
+  --green-border: rgba(22, 163, 74, 0.2);
+
+  --red: #dc2626;
+  --red-bg: rgba(220, 38, 38, 0.08);
+  --red-border: rgba(220, 38, 38, 0.18);
+
+  --yellow: #d97706;
+  --yellow-bg: rgba(217, 119, 6, 0.08);
+  --yellow-border: rgba(217, 119, 6, 0.18);
+
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-accent: 0 8px 24px var(--accent-glow);
+}

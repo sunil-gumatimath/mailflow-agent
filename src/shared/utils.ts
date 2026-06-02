@@ -1,14 +1,29 @@
+import type { GmailMessagePart } from './types';
+
 /**
- * shared/utils.js
- * Pure utility functions used across the extension.
- * No Chrome API dependencies — safe to import anywhere.
+ * Read the saved theme from chrome.storage and apply it to <html data-theme>.
+ * Safe to call from any extension surface (popup, sidepanel, options).
+ * Falls back to 'dark' if storage is unavailable.
  */
+export async function applyStoredTheme(): Promise<'light' | 'dark'> {
+  try {
+    const { extension_settings } = (await chrome.storage.local.get('extension_settings')) as {
+      extension_settings?: { theme?: 'light' | 'dark' };
+    };
+    const theme: 'light' | 'dark' = extension_settings?.theme === 'light' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = theme;
+    return theme;
+  } catch {
+    document.documentElement.dataset.theme = 'dark';
+    return 'dark';
+  }
+}
 
 /**
  * Decode a base64url-encoded string to UTF-8 text.
  * Gmail API returns body data in this encoding.
  */
-export function base64UrlDecode(str) {
+export function base64UrlDecode(str: string): string {
   // Replace base64url chars with standard base64
   const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
   // Pad to a multiple of 4
@@ -23,7 +38,7 @@ export function base64UrlDecode(str) {
  * Encode a string to base64url (no padding).
  * Used when constructing raw MIME messages for the Gmail API.
  */
-export function base64UrlEncode(str) {
+export function base64UrlEncode(str: string): string {
   const bytes = new TextEncoder().encode(str);
   let binary = '';
   for (const byte of bytes) {
@@ -39,7 +54,7 @@ export function base64UrlEncode(str) {
  * Recursively extract the plain-text body from a Gmail API message payload.
  * Handles multipart messages by walking the parts tree.
  */
-export function parseEmailBody(payload) {
+export function parseEmailBody(payload: GmailMessagePart | null | undefined): string {
   if (!payload) return '';
 
   // Direct body on the payload itself
@@ -74,10 +89,10 @@ export function parseEmailBody(payload) {
 /**
  * Format a date string into a human-friendly relative representation.
  */
-export function formatDate(dateString) {
+export function formatDate(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();
-  const diffMs = now - date;
+  const diffMs = now.getTime() - date.getTime();
   const diffSec = Math.floor(diffMs / 1000);
   const diffMin = Math.floor(diffSec / 60);
   const diffHr = Math.floor(diffMin / 60);
@@ -100,7 +115,7 @@ export function formatDate(dateString) {
 /**
  * Truncate a string to `maxLength` characters, appending '…' if truncated.
  */
-export function truncate(text, maxLength = 100) {
+export function truncate(text: string, maxLength: number = 100): string {
   if (!text) return '';
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength).trimEnd() + '…';
@@ -108,14 +123,17 @@ export function truncate(text, maxLength = 100) {
 
 /**
  * Extract specific headers from the Gmail headers array.
- * @param {Array} headers  — payload.headers from the Gmail API
- * @param {string[]} names — header names to extract (case-insensitive)
- * @returns {Object} Map of lowercase name → value
+ * @param headers  — payload.headers from the Gmail API
+ * @param names — header names to extract (case-insensitive)
+ * @returns Map of lowercase name → value
  */
-export function extractHeaders(headers, names = ['From', 'To', 'Subject', 'Date']) {
+export function extractHeaders(
+  headers: { name: string; value: string }[] | undefined,
+  names: string[] = ['From', 'To', 'Subject', 'Date']
+): Record<string, string> {
   if (!headers?.length) return {};
   const wanted = new Set(names.map((n) => n.toLowerCase()));
-  const result = {};
+  const result: Record<string, string> = {};
   for (const header of headers) {
     const key = header.name.toLowerCase();
     if (wanted.has(key)) {
@@ -128,14 +146,14 @@ export function extractHeaders(headers, names = ['From', 'To', 'Subject', 'Date'
 /**
  * Generate a random ID (for action-queue entries, etc.).
  */
-export function generateId() {
+export function generateId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 /**
  * Strip HTML tags from a string (basic implementation).
  */
-function stripHtml(html) {
+function stripHtml(html: string): string {
   return html
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
@@ -160,7 +178,7 @@ function stripHtml(html) {
  * - Limits length
  * - Wraps in a safety boundary
  */
-export function sanitizeForAI(text, maxLength = 12_000) {
+export function sanitizeForAI(text: string, maxLength: number = 12_000): string {
   if (!text) return '';
   let cleaned = stripHtml(text);
   if (cleaned.length > maxLength) {
@@ -176,19 +194,28 @@ export function sanitizeForAI(text, maxLength = 12_000) {
 /**
  * Standard debounce helper.
  */
-export function debounce(fn, delay = 300) {
-  let timer;
-  return (...args) => {
+export function debounce<A extends any[], R>(fn: (...args: A) => R, delay: number = 300): (...args: A) => void {
+  let timer: any;
+  return (...args: A) => {
     clearTimeout(timer);
     timer = setTimeout(() => fn(...args), delay);
   };
+}
+
+interface MimeMessageOptions {
+  to: string;
+  subject: string;
+  body: string;
+  inReplyTo?: string;
+  references?: string;
+  threadId?: string;
 }
 
 /**
  * Build an RFC 2822 MIME message and return it as a base64url string
  * ready for the Gmail API `messages.send` endpoint.
  */
-export function createMimeMessage({ to, subject, body, inReplyTo, references, threadId }) {
+export function createMimeMessage({ to, subject, body, inReplyTo, references }: MimeMessageOptions): string {
   const lines = [
     `To: ${to}`,
     `Subject: ${subject}`,
