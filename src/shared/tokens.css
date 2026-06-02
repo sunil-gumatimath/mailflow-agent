@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════
-   Shared Design Tokens — MailFlow-agent (Ant Design Style)
+   Shared Design Tokens — MailFlow-agent (Linear Style)
    Single source of truth for color, radius, and elevation.
    Each surface CSS @imports this file first.
    ══════════════════════════════════════════════════════════════════ */
@@ -7,34 +7,35 @@
 :root,
 :root[data-theme="light"],
 [data-theme="light"] {
-  /* ── Backgrounds ──────────────────────────────────────────── */
-  --bg-base: #f5f5f5;
+  /* ── Backgrounds (Linear Inverse/Light variant) ───────────── */
+  --bg-base: #f5f6f6;
   --bg-surface: #ffffff;
   --bg-elevated: #ffffff;
-  --bg-glass: #fafafa;
+  --bg-glass: rgba(245, 246, 246, 0.85);
   --bg-input: #ffffff;
 
   /* ── Borders ──────────────────────────────────────────────── */
-  --border-subtle: #f0f0f0;
-  --border-medium: #d9d9d9;
-  --border-accent: #91caff;
+  --border-subtle: #e1e3e5;
+  --border-medium: #d0d2d5;
+  --border-accent: #c0c2c5;
 
   /* ── Text ─────────────────────────────────────────────────── */
-  --text-primary: rgba(0, 0, 0, 0.88);
-  --text-secondary: rgba(0, 0, 0, 0.65);
-  --text-muted: rgba(0, 0, 0, 0.45);
+  --text-primary: #000000;
+  --text-secondary: #3c3f44;
+  --text-muted: #62666d;
   --text-on-accent: #ffffff;
 
-  /* ── Accent / Brand ───────────────────────────────────────── */
-  --accent: #1677ff;
-  --accent-hover: #4096ff;
-  --accent-active: #0958d9;
-  --accent-soft: #e6f4ff;
+  /* ── Accent / Brand (Linear Lavender) ─────────────────────── */
+  --accent: #5e6ad2;
+  --accent-hover: #4c57b0;
+  --accent-active: #3f4999;
+  --accent-soft: rgba(94, 106, 210, 0.1);
+  --accent-active-soft: rgba(94, 106, 210, 0.2);
 
   /* ── Semantic ─────────────────────────────────────────────── */
-  --green: #52c41a;
-  --green-bg: #f6ffed;
-  --green-border: #b7eb8f;
+  --green: #27a644;
+  --green-bg: rgba(39, 166, 68, 0.08);
+  --green-border: rgba(39, 166, 68, 0.2);
 
   --red: #ff4d4f;
   --red-bg: #fff2f0;
@@ -45,16 +46,16 @@
   --yellow-border: #ffe58f;
 
   /* ── Radii ────────────────────────────────────────────────── */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
   --radius-pill: 9999px;
 
   /* ── Shadows ──────────────────────────────────────────────── */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02);
-  --shadow-md: 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
-  --shadow-accent: 0 2px 0 rgba(5, 145, 255, 0.1);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.02), 0 4px 12px rgba(0, 0, 0, 0.03);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.08);
+  --shadow-accent: 0 2px 0 rgba(94, 106, 210, 0.1);
 
   /* ── Motion ───────────────────────────────────────────────── */
   --ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
@@ -66,31 +67,37 @@
   --stagger-step: 40ms;
 }
 
-/* ── Dark Theme Overrides ──────────────────────────────────────── */
+/* ── Dark Theme Overrides (Linear Canonical Dark) ────────────────── */
 :root[data-theme="dark"],
 [data-theme="dark"] {
-  --bg-base: #141414;
-  --bg-surface: #1f1f1f;
-  --bg-elevated: #262626;
-  --bg-glass: #1a1a1a;
-  --bg-input: #1f1f1f;
+  /* ── Backgrounds ──────────────────────────────────────────── */
+  --bg-base: #010102;       /* Linear Canvas */
+  --bg-surface: #0f1011;    /* Linear Surface-1 */
+  --bg-elevated: #141516;   /* Linear Surface-2 */
+  --bg-glass: rgba(15, 16, 17, 0.85);
+  --bg-input: #0f1011;
 
-  --border-subtle: #303030;
-  --border-medium: #424242;
-  --border-accent: #15417e;
+  /* ── Borders ──────────────────────────────────────────────── */
+  --border-subtle: #23252a;  /* Linear Hairline */
+  --border-medium: #34343a;  /* Linear Hairline-strong */
+  --border-accent: #3e3e44;  /* Linear Hairline-tertiary */
 
-  --text-primary: rgba(255, 255, 255, 0.85);
-  --text-secondary: rgba(255, 255, 255, 0.65);
-  --text-muted: rgba(255, 255, 255, 0.45);
+  /* ── Text ─────────────────────────────────────────────────── */
+  --text-primary: #f7f8f8;   /* Linear Ink */
+  --text-secondary: #d0d6e0; /* Linear Ink Muted */
+  --text-muted: #8a8f98;     /* Linear Ink Subtle */
 
-  --accent: #1668dc;
-  --accent-hover: #3c89e8;
-  --accent-active: #1554ad;
-  --accent-soft: rgba(22, 104, 220, 0.15);
+  /* ── Accent / Brand ───────────────────────────────────────── */
+  --accent: #5e6ad2;         /* Linear Lavender */
+  --accent-hover: #828fff;   /* Linear Lavender Hover */
+  --accent-active: #5e69d1;  /* Linear Lavender Focus */
+  --accent-soft: rgba(94, 106, 210, 0.15);
+  --accent-active-soft: rgba(94, 106, 210, 0.25);
 
-  --green: #49aa19;
-  --green-bg: rgba(73, 170, 25, 0.1);
-  --green-border: rgba(73, 170, 25, 0.3);
+  /* ── Semantic ─────────────────────────────────────────────── */
+  --green: #27a644;          /* Success Green */
+  --green-bg: rgba(39, 166, 68, 0.1);
+  --green-border: rgba(39, 166, 68, 0.3);
 
   --red: #dc4446;
   --red-bg: rgba(220, 68, 70, 0.1);
@@ -100,8 +107,9 @@
   --yellow-bg: rgba(216, 150, 20, 0.1);
   --yellow-border: rgba(216, 150, 20, 0.3);
 
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.16), 0 1px 6px -1px rgba(0, 0, 0, 0.12);
-  --shadow-md: 0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 3px 6px -4px rgba(0, 0, 0, 0.48);
-  --shadow-lg: 0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 3px 6px -4px rgba(0, 0, 0, 0.48);
-  --shadow-accent: 0 2px 0 rgba(22, 104, 220, 0.2);
+  /* ── Shadows (Linear resists drop shadows in dark mode) ───── */
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-accent: none;
 }
