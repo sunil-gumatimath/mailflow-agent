@@ -26,14 +26,20 @@ import {
   translateToGmailQuery,
   chatWithAgent,
   getApiKey,
+  summarizeInbox,
+  findPriorityEmails,
+  summarizeUnread,
 } from './ai-provider';
+import type { InboxEmailInput } from './ai-provider';
 
 import {
   queueAction,
   getPendingActions,
   approveAction,
   rejectAction,
+  editAction,
   getActionLog,
+  getSettings,
 } from './action-queue';
 import type { ExtensionResponse, ThreadMessageInput } from '../shared/types';
 
@@ -128,6 +134,24 @@ async function resolveEmailData(data: any = {}, message: any = {}): Promise<Reso
   }
 
   throw new Error('No email message details or thread ID available.');
+}
+
+/**
+ * Fetch a set of inbox emails and shape them for the AI provider.
+ */
+async function fetchInboxForAI(query: string = 'label:INBOX', maxResults: number = 25): Promise<InboxEmailInput[]> {
+  const stubs = await gmailApi.listMessages(query, maxResults);
+  const messages = await Promise.all(stubs.map((s) => gmailApi.getMessage(s.id)));
+  return messages.map((msg) => {
+    const headers = extractHeaders(msg.payload?.headers);
+    return {
+      from: headers['from'] || '',
+      subject: headers['subject'] || '',
+      date: headers['date'] || '',
+      snippet: msg.snippet || '',
+      body: sanitizeForAI(parseEmailBody(msg.payload)),
+    };
+  });
 }
 
 /**
@@ -311,6 +335,28 @@ async function handleMessage(message: any): Promise<ExtensionResponse> {
         return createResponse(true, { reply: replyBody, replyBody });
       }
 
+      // ── Inbox-wide quick actions ───────────────────────────────────────────
+      case MESSAGE_TYPES.SUMMARIZE_INBOX: {
+        const maxResults = data.maxResults ?? message.maxResults ?? 25;
+        const emails = await fetchInboxForAI('label:INBOX', maxResults);
+        const summary = await summarizeInbox(emails);
+        return createResponse(true, { reply: summary, summary });
+      }
+
+      case MESSAGE_TYPES.PRIORITY_EMAILS: {
+        const maxResults = data.maxResults ?? message.maxResults ?? 25;
+        const emails = await fetchInboxForAI('label:INBOX', maxResults);
+        const reply = await findPriorityEmails(emails);
+        return createResponse(true, { reply });
+      }
+
+      case MESSAGE_TYPES.UNREAD_EMAILS: {
+        const maxResults = data.maxResults ?? message.maxResults ?? 25;
+        const emails = await fetchInboxForAI('is:unread', maxResults);
+        const reply = await summarizeUnread(emails);
+        return createResponse(true, { reply });
+      }
+
       case MESSAGE_TYPES.CHAT: {
         const resolvedMessage = data.message ?? message.message;
         const resolvedContext = data.emailContext ?? message.emailContext ?? data.context ?? message.context ?? null;
@@ -413,6 +459,16 @@ async function handleMessage(message: any): Promise<ExtensionResponse> {
         return createResponse(true, rejected);
       }
 
+      case MESSAGE_TYPES.EDIT_ACTION: {
+        const actionId = data.actionId ?? message.actionId;
+        const edited = await editAction(actionId, {
+          reason: data.reason ?? message.reason,
+          params: data.params ?? message.params,
+          riskLevel: data.riskLevel ?? message.riskLevel,
+        });
+        return createResponse(true, edited);
+      }
+
       case MESSAGE_TYPES.GET_PENDING_APPROVALS: {
         const pending = await getPendingActions();
         return createResponse(true, { approvals: pending });
@@ -423,6 +479,13 @@ async function handleMessage(message: any): Promise<ExtensionResponse> {
         const log = await getActionLog(limit);
         return createResponse(true, { history: log });
       }
+
+      // ── Context broadcasts (handled by the side panel) ─────────────────────
+      case MESSAGE_TYPES.EMAIL_CONTEXT_UPDATE:
+      case MESSAGE_TYPES.EMAIL_CONTEXT_CLEAR:
+        // These are broadcast to the side panel; acknowledge here so the
+        // router doesn't log a spurious "Unknown message type" warning.
+        return createResponse(true);
 
       // ── Unknown ────────────────────────────────────────────────────────────
       default:

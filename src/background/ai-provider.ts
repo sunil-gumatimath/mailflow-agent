@@ -151,6 +151,70 @@ export async function summarizeThread(messages: ThreadMessageInput[]): Promise<s
   return callGemini(prompt);
 }
 
+export interface InboxEmailInput {
+  from: string;
+  subject: string;
+  date?: string;
+  snippet?: string;
+  body?: string;
+}
+
+/** Format a list of emails into a compact, numbered block for the model. */
+function formatInbox(emails: InboxEmailInput[]): string {
+  return emails
+    .map((e, i) =>
+      [
+        `--- Email ${i + 1} ---`,
+        `From: ${e.from}`,
+        `Subject: ${e.subject}`,
+        e.date ? `Date: ${e.date}` : '',
+        '',
+        e.body || e.snippet || '',
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    )
+    .join('\n\n');
+}
+
+/** Produce a concise digest of the inbox. */
+export async function summarizeInbox(emails: InboxEmailInput[]): Promise<string> {
+  if (!emails.length) return 'Your inbox is empty — there are no emails to summarize.';
+  const prompt = [
+    `Summarize the following ${emails.length} emails from the user's inbox.`,
+    'Give a short bullet list — one line per email — with the sender and the key point.',
+    'Then add a one-sentence overall takeaway.',
+    '',
+    formatInbox(emails),
+  ].join('\n');
+  return callGemini(prompt);
+}
+
+/** Identify and rank the emails that need the user's attention first. */
+export async function findPriorityEmails(emails: InboxEmailInput[]): Promise<string> {
+  if (!emails.length) return 'Your inbox is empty — there are no priority emails.';
+  const prompt = [
+    `Review the following ${emails.length} emails and identify which ones need the user's attention first.`,
+    'List them in priority order (most urgent first). For each, give the sender, the subject, and a short reason.',
+    'Ignore newsletters and promotions unless they are time-sensitive.',
+    '',
+    formatInbox(emails),
+  ].join('\n');
+  return callGemini(prompt);
+}
+
+/** Summarize the user's unread emails. */
+export async function summarizeUnread(emails: InboxEmailInput[]): Promise<string> {
+  if (!emails.length) return 'You have no unread emails. 🎉';
+  const prompt = [
+    `The user has ${emails.length} unread emails. Summarize them as a short bullet list,`,
+    'one line per email, with the sender and the key point. Flag anything that looks urgent.',
+    '',
+    formatInbox(emails),
+  ].join('\n');
+  return callGemini(prompt);
+}
+
 export interface ClassificationResult {
   category: string;
   priority: string;

@@ -182,6 +182,42 @@ export async function approveAction(actionId: string): Promise<QueuedAction> {
   return executeAction(action);
 }
 
+interface EditActionOptions {
+  reason?: string;
+  params?: any;
+  riskLevel?: string;
+}
+
+/**
+ * Edit a pending action's reason, params, or risk level. The action stays
+ * pending so the user can still approve or reject it afterwards.
+ */
+export async function editAction(actionId: string, updates: EditActionOptions = {}): Promise<QueuedAction> {
+  const pending = await readPending();
+  const index = pending.findIndex((a) => a.id === actionId);
+
+  if (index === -1) {
+    throw new Error(`Action ${actionId} not found in pending queue`);
+  }
+
+  const found = pending[index];
+  if (!found) {
+    throw new Error(`Action ${actionId} data not found`);
+  }
+
+  const edited: QueuedAction = {
+    ...found,
+    reason: updates.reason ?? found.reason,
+    params: updates.params ? { ...found.params, ...updates.params } : found.params,
+    riskLevel: updates.riskLevel ?? found.riskLevel,
+  };
+
+  pending[index] = edited;
+  await writePending(pending);
+
+  return edited;
+}
+
 /**
  * Reject a pending action.
  */
