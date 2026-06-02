@@ -49,4 +49,5 @@ logs/
 /sidepanel/
 /manifest.json
 /service-worker-loader.js
+/vendor/
 
