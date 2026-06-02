@@ -4,27 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MailFlow-agent</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="sidepanel.css">
 </head>
 <body>
 
   <header>
     <div class="brand">
-      <span class="logo">✦</span>
+      <span class="logo" aria-hidden="true">✦</span>
       <span class="title">MailFlow</span>
     </div>
     <div class="header-actions">
-      <span class="dot" id="connectionDot" title="Not connected"></span>
-      <button class="icon-btn" id="clearChatBtn" title="Clear Chat">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <span class="dot" id="connectionDot" role="status" aria-label="Not connected" title="Not connected"></span>
+      <button class="icon-btn" id="clearChatBtn" aria-label="Clear chat" title="Clear Chat">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
         </svg>
       </button>
-      <button class="icon-btn" id="settingsBtn" title="Settings">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button class="icon-btn" id="settingsBtn" aria-label="Open settings" title="Settings">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
         </svg>
       </button>
@@ -34,7 +31,7 @@
   <!-- Auth -->
   <section class="auth" id="authSection">
     <div class="auth-card">
-      <p class="auth-icon">✉</p>
+      <p class="auth-icon" aria-hidden="true">✉</p>
       <h2>Welcome</h2>
       <p class="muted">Connect your Gmail account to let the AI agent manage your emails.</p>
       <button class="btn primary" id="authBtn">Connect to Gmail</button>
@@ -47,8 +44,8 @@
     <!-- Chat Input -->
     <div class="chat-input-area">
       <div class="input-row">
-        <textarea class="chat-input" id="chatInput" placeholder="Ask me anything about your emails..." rows="1"></textarea>
-        <button class="send-btn" id="sendBtn" title="Send">↑</button>
+        <textarea class="chat-input" id="chatInput" placeholder="Ask me anything about your emails..." rows="1" aria-label="Message input"></textarea>
+        <button class="send-btn" id="sendBtn" aria-label="Send message" title="Send">↑</button>
       </div>
       <div class="chips" id="quickActions">
         <button class="chip" data-action="SUMMARIZE_INBOX">📝 Summarize</button>
@@ -59,9 +56,9 @@
     </div>
 
     <!-- Messages -->
-    <div class="chat-messages" id="chatMessages">
+    <div class="chat-messages" id="chatMessages" aria-live="polite">
       <div class="message message--agent fade-in">
-        <div class="message__avatar">✦</div>
+        <div class="message__avatar" aria-hidden="true">✦</div>
         <div class="message__content">
           <div class="message__role">MailFlow</div>
           <div class="message__text">👋 Hello! I can summarize emails, draft replies, search your inbox, and more. What would you like to do?</div>
@@ -91,9 +88,9 @@
 
     <!-- Approvals -->
     <section class="section" id="approvalsSection" hidden>
-      <div class="section-header" data-collapse="approvalsBody">
+      <div class="section-header" data-collapse="approvalsBody" aria-expanded="true" role="button" tabindex="0">
         <span>Pending Approvals <span class="count" id="approvalCount">0</span></span>
-        <span class="chevron">▾</span>
+        <span class="chevron" aria-hidden="true">▾</span>
       </div>
       <div class="section-body" id="approvalsBody">
         <div id="approvalsList"></div>
@@ -102,9 +99,9 @@
 
     <!-- History -->
     <section class="section" id="historySection">
-      <div class="section-header" data-collapse="historyBody">
+      <div class="section-header" data-collapse="historyBody" aria-expanded="true" role="button" tabindex="0">
         <span>Action History</span>
-        <span class="chevron">▾</span>
+        <span class="chevron" aria-hidden="true">▾</span>
       </div>
       <div class="section-body" id="historyBody">
         <div id="historyList">
@@ -117,8 +114,8 @@
 
   <footer>Powered by <strong>Gemini</strong></footer>
 
-  <div class="toast-container" id="toastContainer"></div>
+  <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
-  <script src="sidepanel.js" type="module"></script>
+  <script src="sidepanel.ts" type="module"></script>
 </body>
 </html>

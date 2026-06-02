@@ -1,63 +1,10 @@
 /* ══════════════════════════════════════════════════════════════════
    Options Page — Premium Glassmorphic Settings UI
+   Surface-specific styles only. Tokens & base come from /shared.
    ══════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-/* ── Design Tokens ────────────────────────────────────────────── */
-:root {
-  --bg-base: #08090d;
-  --bg-surface: rgba(16, 17, 27, 0.65);
-  --bg-elevated: rgba(22, 23, 38, 0.55);
-  --bg-glass: rgba(255, 255, 255, 0.03);
-  --bg-input: rgba(10, 11, 18, 0.8);
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-medium: rgba(255, 255, 255, 0.09);
-  --border-accent: rgba(129, 140, 248, 0.25);
-  --text-primary: #eaeaef;
-  --text-secondary: #9196a8;
-  --text-muted: #5c6178;
-  --accent: #818cf8;
-  --accent-soft: rgba(129, 140, 248, 0.12);
-  --accent-glow: rgba(129, 140, 248, 0.35);
-  --violet: #a78bfa;
-  --green: #4ade80;
-  --red: #f87171;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-}
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  font-size: 13px;
-  color: var(--text-primary);
-  background: var(--bg-base);
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  position: relative;
-}
-
-/* ── Ambient Background ───────────────────────────────────────── */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 70% 50% at 10% 0%, rgba(129, 140, 248, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse 50% 40% at 90% 80%, rgba(167, 139, 250, 0.04) 0%, transparent 50%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* ── Scrollbar ────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.14); }
+@import url('../shared/tokens.css');
+@import url('../shared/base.css');
 
 /* ── Container ────────────────────────────────────────────────── */
 .container {
@@ -84,18 +31,13 @@ header {
   place-items: center;
   border-radius: var(--radius-md);
   background: linear-gradient(135deg, var(--accent) 0%, var(--violet) 100%);
-  color: #fff;
+  color: var(--text-on-accent);
   font-size: 18px;
   font-weight: 700;
   box-shadow:
     0 8px 24px var(--accent-glow),
     0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   animation: logoShimmer 4s ease-in-out infinite;
-}
-
-@keyframes logoShimmer {
-  0%, 100% { box-shadow: 0 8px 24px var(--accent-glow), 0 0 0 1px rgba(255, 255, 255, 0.1) inset; }
-  50% { box-shadow: 0 10px 32px rgba(129, 140, 248, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.15) inset; }
 }
 
 header h1 {
@@ -129,16 +71,8 @@ main {
   overflow: hidden;
   transition: all 0.25s ease;
   animation: fadeUp 0.4s ease-out both;
+  animation-delay: calc(var(--i, 0) * var(--stagger-step));
 }
-
-/* Staggered entrance */
-.card:nth-child(1) { animation-delay: 0.05s; }
-.card:nth-child(2) { animation-delay: 0.1s; }
-.card:nth-child(3) { animation-delay: 0.15s; }
-.card:nth-child(4) { animation-delay: 0.2s; }
-.card:nth-child(5) { animation-delay: 0.25s; }
-.card:nth-child(6) { animation-delay: 0.3s; }
-.card:nth-child(7) { animation-delay: 0.35s; }
 
 /* Luminous top edge */
 .card::before {
@@ -222,25 +156,17 @@ textarea {
   font-family: inherit;
   font-size: 13px;
   outline: none;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s var(--ease-out);
 }
 
-input:focus, select:focus, textarea:focus {
-  border-color: var(--accent);
-  box-shadow:
-    0 0 0 3px var(--accent-soft),
-    0 0 16px rgba(129, 140, 248, 0.06);
-}
-
-input::placeholder, textarea::placeholder {
-  color: rgba(92, 97, 120, 0.7);
-}
+input::placeholder, textarea::placeholder { color: var(--text-muted); opacity: 0.7; }
 
 input.narrow { max-width: 100px; }
 
 select {
   cursor: pointer;
   appearance: none;
+  -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
@@ -248,6 +174,7 @@ select {
 }
 
 select option { background: #12131e; color: var(--text-primary); }
+:root[data-theme="light"] select option { background: #ffffff; color: var(--text-primary); }
 
 textarea {
   resize: vertical;
@@ -284,10 +211,7 @@ textarea {
   margin-top: 10px;
 }
 
-.status {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
+.status { font-size: 12px; color: var(--text-secondary); }
 
 .api-status {
   font-size: 12px;
@@ -312,7 +236,7 @@ textarea {
   text-shadow: 0 0 8px rgba(129, 140, 248, 0.15);
 }
 
-/* ── Toggle Switches ──────────────────────────────────────────── */
+/* ── Toggle Switches (a11y-improved) ─────────────────────────── */
 .toggle-row {
   display: flex;
   align-items: center;
@@ -340,6 +264,8 @@ textarea {
   margin: 0;
 }
 
+:root[data-theme="light"] .toggle-label { color: var(--text-primary); }
+
 .toggle-hint {
   display: block;
   font-size: 11px;
@@ -349,7 +275,15 @@ textarea {
   letter-spacing: 0;
 }
 
-.toggle-row input[type="checkbox"] { display: none; }
+/* Real <input> is visually hidden but stays focusable + screen-readable */
+.toggle-row input[type="checkbox"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  margin: 0;
+}
 
 .toggle {
   position: relative;
@@ -358,8 +292,9 @@ textarea {
   background: rgba(255, 255, 255, 0.06);
   border-radius: 11px;
   flex-shrink: 0;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s var(--ease-out);
   border: 1px solid var(--border-subtle);
+  display: block;
 }
 
 .toggle::after {
@@ -371,7 +306,7 @@ textarea {
   height: 16px;
   background: var(--text-muted);
   border-radius: 50%;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* spring effect */
+  transition: all 0.3s var(--ease-spring);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
@@ -383,8 +318,14 @@ input:checked + .toggle {
 
 input:checked + .toggle::after {
   left: 20px;
-  background: #fff;
+  background: var(--text-on-accent);
   box-shadow: 0 2px 8px rgba(129, 140, 248, 0.4);
+}
+
+/* Show focus ring on the visible toggle span when the hidden input is focused */
+.toggle-row input[type="checkbox"]:focus-visible + .toggle {
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-color: var(--accent);
 }
 
 /* ── Theme Buttons ────────────────────────────────────────────── */
@@ -403,7 +344,7 @@ input:checked + .toggle::after {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s var(--ease-out);
 }
 
 .theme-btn:hover {
@@ -415,7 +356,7 @@ input:checked + .toggle::after {
 .theme-btn.active {
   background: linear-gradient(135deg, var(--accent), var(--violet));
   border-color: var(--accent);
-  color: #fff;
+  color: var(--text-on-accent);
   font-weight: 600;
   box-shadow: 0 8px 24px var(--accent-glow), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
 }
@@ -455,7 +396,7 @@ input:checked + .toggle::after {
 .account-value {
   font-size: 13px;
   font-weight: 500;
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
   color: var(--text-primary);
 }
 
@@ -478,6 +419,8 @@ input:checked + .toggle::after {
   transition: background 0.15s ease;
 }
 
+:root[data-theme="light"] .log-item { border-bottom-color: rgba(0, 0, 0, 0.05); }
+
 .log-item:last-child { border-bottom: none; }
 .log-item:hover { background: var(--bg-glass); }
 
@@ -486,7 +429,7 @@ input:checked + .toggle::after {
 .log-item__time {
   font-size: 10px;
   color: var(--text-muted);
-  font-family: 'SF Mono', 'Cascadia Code', monospace;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
   flex-shrink: 0;
 }
 
@@ -524,7 +467,7 @@ input:checked + .toggle::after {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s var(--ease-out);
   position: relative;
   overflow: hidden;
 }
@@ -546,11 +489,11 @@ input:checked + .toggle::after {
 .btn.danger-outline {
   background: transparent;
   color: var(--red);
-  border: 1px solid rgba(248, 113, 113, 0.18);
+  border: 1px solid var(--red-border);
 }
 
 .btn.danger-outline:hover {
-  background: rgba(248, 113, 113, 0.08);
+  background: var(--red-bg);
   border-color: rgba(248, 113, 113, 0.3);
 }
 
@@ -567,7 +510,7 @@ input:checked + .toggle::after {
   right: 20px;
   padding: 11px 26px;
   background: linear-gradient(135deg, var(--accent), var(--violet));
-  color: #fff;
+  color: var(--text-on-accent);
   border: none;
   border-radius: var(--radius-lg);
   font-family: inherit;
@@ -577,9 +520,9 @@ input:checked + .toggle::after {
   box-shadow:
     0 12px 36px var(--accent-glow),
     0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s var(--ease-out);
   z-index: 100;
-  animation: saveBtnPulse 2s ease-in-out infinite, slideUp 0.3s ease-out;
+  animation: saveBtnPulse 2s ease-in-out infinite;
 }
 
 .floating-save:hover {
@@ -589,24 +532,11 @@ input:checked + .toggle::after {
     0 0 0 1px rgba(255, 255, 255, 0.15) inset;
 }
 
-.floating-save:active {
-  transform: translateY(0);
-}
+.floating-save:active { transform: translateY(0); }
 
 .floating-save[hidden] { display: none; }
 
 @keyframes saveBtnPulse {
   0%, 100% { box-shadow: 0 12px 36px var(--accent-glow), 0 0 0 1px rgba(255, 255, 255, 0.1) inset; }
-  50% { box-shadow: 0 12px 40px rgba(129, 140, 248, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.12) inset; }
-}
-
-/* ── Animations ───────────────────────────────────────────────── */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  50%      { box-shadow: 0 12px 40px rgba(129, 140, 248, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.12) inset; }
 }

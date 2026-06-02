@@ -30,14 +30,14 @@
   },
 
   "background": {
-    "service_worker": "background/service-worker.js",
+    "service_worker": "background/service-worker.ts",
     "type": "module"
   },
 
   "content_scripts": [
     {
       "matches": ["https://mail.google.com/*"],
-      "js": ["content/content.js"],
+      "js": ["content/content.ts"],
       "css": ["content/content.css"],
       "run_at": "document_idle"
     }

@@ -1,31 +1,35 @@
 /* ══════════════════════════════════════════════════════════════════
    Content Script — Premium Glassmorphic Notifications
+   Injected into mail.google.com by Chrome.
+   Vite will inline these @imports at build time.
    ══════════════════════════════════════════════════════════════════ */
+
+@import url('../shared/tokens.css');
+@import url('../shared/base.css');
 
 .gmail-ai-notif {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
-  background: rgba(16, 17, 27, 0.85);
+  bottom: 16px;
+  right: 16px;
+  background: var(--bg-surface);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  color: #eaeaef;
+  color: var(--text-primary);
   padding: 14px 22px 14px 18px;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 13px;
   font-weight: 500;
   z-index: 999999;
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.35),
+    var(--shadow-lg),
     0 0 0 1px rgba(255, 255, 255, 0.06) inset;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   gap: 10px;
   max-width: 340px;
-  animation: notifSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  position: relative;
+  animation: notifSlideIn 0.4s var(--ease-spring) forwards;
   overflow: hidden;
 }
 
@@ -37,7 +41,7 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  background: linear-gradient(180deg, #818cf8, #a78bfa);
+  background: linear-gradient(180deg, var(--accent), var(--violet));
   border-radius: 3px 0 0 3px;
 }
 
@@ -53,43 +57,28 @@
 }
 
 .gmail-ai-notif--error {
-  border-color: rgba(248, 113, 113, 0.2);
+  border-color: var(--red-border);
 }
 
 .gmail-ai-notif--error::before {
-  background: linear-gradient(180deg, #f87171, #ef4444);
+  background: linear-gradient(180deg, var(--red), #ef4444);
 }
 
 .gmail-ai-notif--success {
-  border-color: rgba(74, 222, 128, 0.2);
+  border-color: var(--green-border);
 }
 
 .gmail-ai-notif--success::before {
-  background: linear-gradient(180deg, #4ade80, #22c55e);
+  background: linear-gradient(180deg, var(--green), #22c55e);
 }
 
 .gmail-ai-notif--hide {
-  animation: notifSlideOut 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: notifSlideOut 0.35s var(--ease-out) forwards;
 }
 
-@keyframes notifSlideIn {
-  from {
-    transform: translateY(20px) scale(0.95);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
+/* Monospace text support */
+.gmail-ai-notif code,
+.gmail-ai-notif .mono {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
 
-@keyframes notifSlideOut {
-  from {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-  to {
-    transform: translateY(-10px) scale(0.95);
-    opacity: 0;
-  }
-}

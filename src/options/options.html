@@ -4,69 +4,66 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MailFlow-agent — Settings</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="options.css" />
 </head>
 <body>
   <div class="container">
     <header>
-      <span class="logo">✦</span>
+      <span class="logo" aria-hidden="true">✦</span>
       <div>
         <h1>MailFlow</h1>
-        <p class="subtitle">Settings & Configuration</p>
+        <p class="subtitle">Settings &amp; Configuration</p>
       </div>
     </header>
 
     <main>
       <!-- API Key -->
-      <section class="card">
-        <h2><span class="section-icon">🔑</span> API Configuration</h2>
+      <section class="card" style="--i: 0">
+        <h2><span class="section-icon" aria-hidden="true">🔑</span> API Configuration</h2>
         <label for="apiKey">Gemini API Key</label>
         <div class="input-group">
           <input type="password" id="apiKey" placeholder="Enter your Gemini API key" autocomplete="off" />
-          <button type="button" class="toggle-btn" id="toggleApiKey">👁</button>
+          <button type="button" class="toggle-btn" id="toggleApiKey" aria-label="Show or hide API key">👁</button>
         </div>
         <div class="row">
           <button class="btn secondary sm" id="testApiBtn">Test Connection</button>
-          <span class="status" id="apiStatus"></span>
+          <span class="status" id="apiStatus" aria-live="polite"></span>
         </div>
       </section>
 
       <!-- Approvals -->
-      <section class="card">
-        <h2><span class="section-icon">🛡</span> Approval Settings</h2>
+      <section class="card" style="--i: 1">
+        <h2><span class="section-icon" aria-hidden="true">🛡</span> Approval Settings</h2>
         <p class="hint">Choose which risk levels need your manual approval.</p>
         <label class="toggle-row">
           <div>
             <span class="toggle-label">Low-risk actions</span>
             <span class="toggle-hint">Summarize, classify, search</span>
           </div>
-          <input type="checkbox" id="approvalLow" />
-          <span class="toggle"></span>
+          <input type="checkbox" id="approvalLow" role="switch" />
+          <span class="toggle" aria-hidden="true"></span>
         </label>
         <label class="toggle-row">
           <div>
             <span class="toggle-label">Medium-risk actions</span>
             <span class="toggle-hint">Archive, label, mark as read</span>
           </div>
-          <input type="checkbox" id="approvalMedium" checked />
-          <span class="toggle"></span>
+          <input type="checkbox" id="approvalMedium" checked role="switch" />
+          <span class="toggle" aria-hidden="true"></span>
         </label>
         <label class="toggle-row">
           <div>
             <span class="toggle-label">High-risk actions</span>
             <span class="toggle-hint">Send, delete, forward emails</span>
           </div>
-          <input type="checkbox" id="approvalHigh" checked />
-          <span class="toggle"></span>
+          <input type="checkbox" id="approvalHigh" checked role="switch" />
+          <span class="toggle" aria-hidden="true"></span>
         </label>
       </section>
 
       <!-- Personalization -->
-      <section class="card">
-        <h2><span class="section-icon">✨</span> Personalization</h2>
+      <section class="card" style="--i: 2">
+        <h2><span class="section-icon" aria-hidden="true">✨</span> Personalization</h2>
         <label for="userName">Your Name</label>
         <input type="text" id="userName" placeholder="Enter your name" />
         <label for="writingTone">Writing Tone</label>
@@ -81,20 +78,20 @@
       </section>
 
       <!-- Preferences -->
-      <section class="card">
-        <h2><span class="section-icon">⚙</span> Preferences</h2>
+      <section class="card" style="--i: 3">
+        <h2><span class="section-icon" aria-hidden="true">⚙</span> Preferences</h2>
         <label for="maxEmails">Max Emails to Fetch</label>
         <input type="number" id="maxEmails" min="10" max="500" value="50" class="narrow" />
-        <label>Theme</label>
-        <div class="theme-btns">
-          <button class="theme-btn active" id="themeDark">Dark</button>
-          <button class="theme-btn" id="themeLight">Light</button>
-        </div>
+        <fieldset class="theme-btns" aria-label="Theme">
+          <legend class="sr-only">Theme</legend>
+          <button class="theme-btn" id="themeDark" type="button">Dark</button>
+          <button class="theme-btn" id="themeLight" type="button">Light</button>
+        </fieldset>
       </section>
 
       <!-- Account -->
-      <section class="card">
-        <h2><span class="section-icon">👤</span> Account</h2>
+      <section class="card" style="--i: 4">
+        <h2><span class="section-icon" aria-hidden="true">👤</span> Account</h2>
         <div class="account-row">
           <span class="account-label">Connected Email</span>
           <span class="account-value" id="accountEmail">Not connected</span>
@@ -103,19 +100,19 @@
       </section>
 
       <!-- Action Log -->
-      <section class="card">
+      <section class="card" style="--i: 5">
         <div class="card-header">
-          <h2><span class="section-icon">📋</span> Action Log</h2>
+          <h2><span class="section-icon" aria-hidden="true">📋</span> Action Log</h2>
           <button class="btn secondary sm" id="clearLogBtn">Clear</button>
         </div>
-        <div class="log-list" id="actionLog">
+        <div class="log-list" id="actionLog" aria-live="polite">
           <div class="empty">📋 No actions recorded</div>
         </div>
       </section>
 
       <!-- About -->
-      <section class="card">
-        <h2><span class="section-icon">ℹ</span> About</h2>
+      <section class="card" style="--i: 6">
+        <h2><span class="section-icon" aria-hidden="true">ℹ</span> About</h2>
         <p><strong>MailFlow-agent</strong> v1.0.0</p>
         <p class="muted">AI-powered email assistant built with Gemini.</p>
       </section>
@@ -124,6 +121,6 @@
     <button class="floating-save" id="saveBtn" hidden>Save Changes</button>
   </div>
 
-  <script type="module" src="options.js"></script>
+  <script type="module" src="options.ts"></script>
 </body>
 </html>
