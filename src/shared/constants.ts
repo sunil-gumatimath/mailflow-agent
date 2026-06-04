@@ -13,8 +13,6 @@ export const MESSAGE_TYPES = {
 
   // Chat / AI
   CHAT: 'CHAT',
-  CHAT_RESPONSE: 'CHAT_RESPONSE',
-  CHAT_STREAM: 'CHAT_STREAM',
 
   // Quick Actions
   SUMMARIZE_INBOX: 'SUMMARIZE_INBOX',
@@ -56,9 +54,9 @@ export const MESSAGE_TYPES = {
   MARK_READ: 'MARK_READ',
   CREATE_DRAFT: 'CREATE_DRAFT',
   GET_LABELS: 'GET_LABELS',
-
-  // Side Panel
-  OPEN_SIDE_PANEL: 'OPEN_SIDE_PANEL',
+  GET_UNREAD_COUNT: 'GET_UNREAD_COUNT',
+  BATCH_MODIFY: 'BATCH_MODIFY',
+  CLEAR_LOG: 'CLEAR_LOG',
 };
 
 // ─── Risk Levels ─────────────────────────────────────────────────
@@ -100,9 +98,8 @@ export const ACTION_STATUS = {
 // Current models available through the Gemini Developer API
 // (generateContent). `id` is sent to the API; `label` is shown in the UI.
 export const GEMINI_MODELS = [
-  { id: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro (Preview)' },
+  { id: 'gemini-3-pro-preview', label: 'Gemini 3 Pro (Preview)' },
   { id: 'gemini-3-flash-preview', label: 'Gemini 3 Flash (Preview)' },
-  { id: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash-Lite' },
   { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
   { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
   { id: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite' },
@@ -136,4 +133,3 @@ export const EXTENSION_INFO = {
 // ─── API Bases ───────────────────────────────────────────────────
 export const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 export const GMAIL_API_BASE = 'https://gmail.googleapis.com/gmail/v1/users/me';
-
