@@ -4,13 +4,14 @@
  */
 
 import { DEFAULT_SETTINGS } from './constants';
-import type { Settings, QueuedAction } from './types';
+import type { Settings, QueuedAction, AutoPilotRule } from './types';
 
 const KEYS = {
   SETTINGS: 'extension_settings',
   API_KEY: 'geminiApiKey',
   PENDING: 'actionQueue_pending',
   LOG: 'actionQueue_log',
+  RULES: 'autopilot_rules',
 } as const;
 
 async function getRaw<T>(key: string): Promise<T | undefined> {
@@ -59,4 +60,12 @@ export async function appendLogEntry(entry: QueuedAction, maxEntries = 500): Pro
 
 export async function clearActionLog(): Promise<void> {
   await chrome.storage.local.set({ [KEYS.LOG]: [] });
+}
+
+export async function getRules(): Promise<AutoPilotRule[]> {
+  return (await getRaw<AutoPilotRule[]>(KEYS.RULES)) ?? [];
+}
+
+export async function saveRules(rules: AutoPilotRule[]): Promise<void> {
+  await chrome.storage.local.set({ [KEYS.RULES]: rules });
 }

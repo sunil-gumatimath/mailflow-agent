@@ -9,6 +9,7 @@ import { applyStoredTheme } from '../shared/utils';
 import { sendToBackground } from '../shared/messaging';
 import { escapeHtml } from '../shared/escape';
 import { formatMessageText } from '../shared/markdown';
+import type { TimelineEvent } from '../background/ai-provider';
 
 // ─── DOM References ──────────────────────────────────────────────
 const $ = <T extends Element = HTMLElement>(sel: string): T | null => document.querySelector<T>(sel);
@@ -38,6 +39,16 @@ const dom = {
   get summarizeInboxChip() { return $('[data-action="SUMMARIZE_INBOX"]') as HTMLButtonElement | null; },
   get summarizeEmailChip() { return $('#summarizeEmailChip') as HTMLButtonElement | null; },
   get draftReplyChip() { return $('#draftReplyChip') as HTMLButtonElement | null; },
+  get draftPanel() { return $('#draftPanel'); },
+  get draftInstruction() { return $('#draftInstruction') as HTMLTextAreaElement | null; },
+  get draftTone() { return $('#draftTone') as HTMLSelectElement | null; },
+  get draftLength() { return $('#draftLength') as HTMLSelectElement | null; },
+  get cancelDraftBtn() { return $('#cancelDraftBtn') as HTMLButtonElement | null; },
+  get generateDraftBtn() { return $('#generateDraftBtn') as HTMLButtonElement | null; },
+  get timelinePanel() { return $('#timelinePanel'); },
+  get timelineLoading() { return $('#timelineLoading'); },
+  get timelineEventsList() { return $('#timelineEventsList'); },
+  get closeTimelineBtn() { return $('#closeTimelineBtn') as HTMLButtonElement | null; },
 };
 
 // ─── State ───────────────────────────────────────────────────────
@@ -377,6 +388,8 @@ function updateEmailContext(context: EmailContext | null): void {
     if (dom.summarizeInboxChip) dom.summarizeInboxChip.style.display = '';
     if (dom.summarizeEmailChip) dom.summarizeEmailChip.style.display = 'none';
     if (dom.draftReplyChip) dom.draftReplyChip.style.display = 'none';
+    hideDraftPanel();
+    hideTimelinePanel();
     return;
   }
 
@@ -394,6 +407,8 @@ function updateEmailContext(context: EmailContext | null): void {
     };
   } else {
     currentEmailContext = context;
+    hideDraftPanel();
+    hideTimelinePanel();
   }
 
   const ctx = currentEmailContext;
@@ -429,12 +444,21 @@ function handleContextAction(actionType: string): void {
     return;
   }
 
-  const isTextAction = ['SUMMARIZE_EMAIL', 'DRAFT_REPLY', 'SUMMARIZE_THREAD'].includes(actionType);
+  if (actionType === 'DRAFT_REPLY') {
+    showDraftPanel();
+    return;
+  }
+
+  if (actionType === 'VIEW_TIMELINE') {
+    showTimelinePanel();
+    return;
+  }
+
+  const isTextAction = ['SUMMARIZE_EMAIL', 'SUMMARIZE_THREAD'].includes(actionType);
 
   if (isTextAction) {
     const labels: Record<string, string> = {
       SUMMARIZE_EMAIL: 'Summarize this email',
-      DRAFT_REPLY: 'Draft a reply',
       SUMMARIZE_THREAD: 'Summarize this thread',
     };
 
@@ -770,6 +794,22 @@ function setupEventListeners(): void {
     }
     sendResponse({ received: true });
   });
+
+  // Draft Options Panel Events
+  dom.cancelDraftBtn?.addEventListener('click', hideDraftPanel);
+  dom.generateDraftBtn?.addEventListener('click', handleGenerateDraft);
+
+  // Preset buttons click handler
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as Element).closest('.preset-btn') as HTMLElement | null;
+    if (btn) {
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+  });
+
+  // Timeline Panel Events
+  dom.closeTimelineBtn?.addEventListener('click', hideTimelinePanel);
 }
 
 // ─── Textarea Auto-Resize ────────────────────────────────────────
@@ -858,4 +898,141 @@ function getActionIcon(type: string): string {
     SUMMARIZE_EMAIL: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
   };
   return icons[type] ?? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>';
+}
+
+// ─── Smart Drafting Operations ───────────────────────────────────
+
+async function showDraftPanel(): Promise<void> {
+  if (!dom.draftPanel) return;
+
+  // Clear input
+  if (dom.draftInstruction) dom.draftInstruction.value = '';
+
+  // Reset presets
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    if ((btn as HTMLElement).dataset.preset === 'custom') {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  // Pre-fill tone with saved settings tone
+  try {
+    const response = await sendToBackground({ type: MESSAGE_TYPES.GET_SETTINGS });
+    if (response?.success && response.data) {
+      const settings = response.data;
+      if (dom.draftTone && settings.writingTone) {
+        dom.draftTone.value = settings.writingTone;
+      }
+    }
+  } catch (err) {
+    console.warn('[InboxCommander] Failed to fetch settings for draft panel default:', err);
+  }
+
+  dom.draftPanel.hidden = false;
+  if (dom.draftInstruction) dom.draftInstruction.focus();
+}
+
+function hideDraftPanel(): void {
+  if (dom.draftPanel) dom.draftPanel.hidden = true;
+}
+
+async function handleGenerateDraft(): Promise<void> {
+  if (!currentEmailContext || isWaitingForResponse) return;
+
+  const presetBtn = document.querySelector('.preset-btn.active') as HTMLElement | null;
+  const preset = presetBtn?.dataset.preset ?? 'custom';
+  const customText = dom.draftInstruction?.value.trim() ?? '';
+  const tone = dom.draftTone?.value ?? 'professional';
+  const length = dom.draftLength?.value ?? 'medium';
+
+  let presetInstruction = '';
+  if (preset === 'agree') {
+    presetInstruction = 'Politely agree and accept the proposal/request.';
+  } else if (preset === 'decline') {
+    presetInstruction = 'Politely decline the proposal/request.';
+  } else if (preset === 'info') {
+    presetInstruction = 'Ask for more details or clarification.';
+  }
+
+  let finalInstruction: string;
+  if (presetInstruction && customText) {
+    finalInstruction = `${presetInstruction} Additional instruction: ${customText}`;
+  } else if (presetInstruction) {
+    finalInstruction = presetInstruction;
+  } else {
+    finalInstruction = customText || 'Draft a reply.';
+  }
+
+  hideDraftPanel();
+
+  await runInboxAction(
+    MESSAGE_TYPES.DRAFT_REPLY,
+    `Draft reply (${preset === 'custom' ? 'custom' : preset}, tone: ${tone}, length: ${length})`,
+    {
+      emailId: currentEmailContext.emailId,
+      threadId: currentEmailContext.threadId,
+      instruction: finalInstruction,
+      tone: tone,
+      length: length,
+    }
+  );
+}
+
+// ─── Timeline Operations ─────────────────────────────────────────
+
+function showTimelinePanel(): void {
+  if (!dom.timelinePanel) return;
+  hideDraftPanel(); // Avoid overlapping options
+  dom.timelinePanel.hidden = false;
+  loadTimeline();
+}
+
+function hideTimelinePanel(): void {
+  if (dom.timelinePanel) dom.timelinePanel.hidden = true;
+}
+
+async function loadTimeline(): Promise<void> {
+  if (!currentEmailContext || !dom.timelineLoading || !dom.timelineEventsList) return;
+
+  dom.timelineLoading.hidden = false;
+  dom.timelineEventsList.innerHTML = '';
+
+  try {
+    const res = await sendToBackground({
+      type: MESSAGE_TYPES.GET_THREAD_TIMELINE,
+      threadId: currentEmailContext.threadId,
+    });
+
+    if (res?.success && res.data?.timeline) {
+      const events = res.data.timeline;
+      if (events.length === 0) {
+        dom.timelineEventsList.innerHTML = '<div class="empty-state" style="padding: 12px 0;">No timeline events extracted.</div>';
+        return;
+      }
+
+      dom.timelineEventsList.innerHTML = events.map((event: TimelineEvent) => {
+        const typeLabel = event.type ? event.type.toUpperCase() : 'UPDATE';
+        const senderName = event.sender ? escapeHtml((event.sender.split('<')[0] ?? '').trim()) : 'Unknown';
+        
+        return `
+          <div class="timeline-node" data-type="${escapeHtml(event.type || 'update')}">
+            <div class="timeline-node-header">
+              <span class="timeline-node-sender">${senderName}</span>
+              <span>${escapeHtml(typeLabel)}</span>
+            </div>
+            <div class="timeline-node-summary">${escapeHtml(event.summary)}</div>
+          </div>
+        `;
+      }).join('');
+    } else {
+      dom.timelineEventsList.innerHTML = `<div class="empty-state" style="padding: 12px 0; color: var(--red);">Failed to load timeline. ${escapeHtml(res?.error || '')}</div>`;
+    }
+  } catch (err) {
+    console.error('[InboxCommander] loadTimeline failed:', err);
+    dom.timelineEventsList.innerHTML = '<div class="empty-state" style="padding: 12px 0; color: var(--red);">Error connecting to background worker.</div>';
+  } finally {
+    dom.timelineLoading.hidden = true;
+  }
 }

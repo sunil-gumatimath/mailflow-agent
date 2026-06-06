@@ -57,6 +57,9 @@ export const MESSAGE_TYPES = {
   GET_UNREAD_COUNT: 'GET_UNREAD_COUNT',
   BATCH_MODIFY: 'BATCH_MODIFY',
   CLEAR_LOG: 'CLEAR_LOG',
+  RUN_AUTOPILOT: 'RUN_AUTOPILOT',
+  GET_ANALYTICS: 'GET_ANALYTICS',
+  GET_THREAD_TIMELINE: 'GET_THREAD_TIMELINE',
 };
 
 // ─── Risk Levels ─────────────────────────────────────────────────

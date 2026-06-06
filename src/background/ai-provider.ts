@@ -357,3 +357,189 @@ export async function chatWithAgent(
 
   return callGemini(prompt);
 }
+
+/**
+ * Determine if an email matches a user's natural language filter criteria.
+ * Returns true if it matches, false otherwise.
+ */
+export async function evaluateRuleMatch(
+  emailContent: string,
+  subject: string,
+  from: string,
+  filterText: string,
+): Promise<boolean> {
+  const prompt = [
+    'You are a precise email filtering assistant.',
+    'Evaluate whether the email below matches the user\'s filtering criteria.',
+    'Respond with ONLY the word "YES" if it matches, or "NO" if it does not match. Do not output any other text.',
+    '',
+    `Filtering Criteria: "${filterText}"`,
+    '',
+    `Sender: ${from}`,
+    `Subject: ${subject}`,
+    '',
+    emailContent,
+  ].join('\n');
+
+  try {
+    const raw = await callGemini(prompt);
+    // Anchor on the first non-whitespace token: the reply must START with YES
+    // (modulo leading whitespace) and be followed by whitespace, end-of-string,
+    // or terminal punctuation. This rejects both substring matches ("I wouldn't
+    // say YES to that.") and hyphenated tokens ("YES-terday's newsletter") that
+    // the model's prompt instructs it not to produce.
+    return /^\s*YES(?:[ \t\n\r,.!?;:]|$)/i.test(raw.trim());
+  } catch (err) {
+    console.error('[InboxCommander] evaluateRuleMatch failed:', err);
+    return false;
+  }
+}
+
+export interface AnalyticsResult {
+  totalAnalyzed: number;
+  urgentCount: number;
+  overallMood: string;
+  categories: { name: string; count: number }[];
+  sentiments: { name: string; count: number }[];
+}
+
+/**
+ * Perform batch analysis on a list of emails to extract categories, sentiment, and urgency counts.
+ */
+export async function runAnalytics(emails: InboxEmailInput[]): Promise<AnalyticsResult> {
+  if (emails.length === 0) {
+    return {
+      totalAnalyzed: 0,
+      urgentCount: 0,
+      overallMood: 'Neutral',
+      categories: [],
+      sentiments: [],
+    };
+  }
+
+  const formatted = emails
+    .map(
+      (e, i) =>
+        `Email ${i + 1}:\nSender: ${e.from}\nSubject: ${e.subject}\nSnippet: ${e.snippet ?? ''}`,
+    )
+    .join('\n\n');
+
+  const prompt = [
+    'Analyze the following emails and output a single JSON object matching the schema below. Do not wrap in markdown code blocks or output any extra conversational text.',
+    '',
+    'Schema:',
+    '{',
+    '  "urgentCount": number,',
+    '  "overallMood": "Positive" | "Neutral" | "Productive" | "Stressful" | "Calm" | "Action-Required",',
+    '  "categories": [',
+    '    { "name": "Work", "count": number },',
+    '    { "name": "Personal", "count": number },',
+    '    { "name": "Updates", "count": number },',
+    '    { "name": "Finance", "count": number },',
+    '    { "name": "Promotions", "count": number }',
+    '  ],',
+    '  "sentiments": [',
+    '    { "name": "Positive", "count": number },',
+    '    { "name": "Neutral", "count": number },',
+    '    { "name": "Urgent/Frustrated", "count": number }',
+    '  ]',
+    '}',
+    '',
+    'Emails to analyze:',
+    formatted,
+  ].join('\n');
+
+  let raw = '';
+  try {
+    raw = await callGemini(prompt);
+    const cleaned = raw
+      .replace(/```json\s*/gi, '')
+      .replace(/```\s*/g, '')
+      .trim();
+    const parsed = JSON.parse(cleaned);
+
+    return {
+      totalAnalyzed: emails.length,
+      urgentCount: Number(parsed.urgentCount) || 0,
+      overallMood: String(parsed.overallMood) || 'Neutral',
+      categories: Array.isArray(parsed.categories) ? parsed.categories : [],
+      sentiments: Array.isArray(parsed.sentiments) ? parsed.sentiments : [],
+    };
+  } catch (err) {
+    console.error('[InboxCommander] runAnalytics failed:', err, { raw });
+    // Return a fallback
+    return {
+      totalAnalyzed: emails.length,
+      urgentCount: 0,
+      overallMood: 'Neutral',
+      categories: [
+        { name: 'Work', count: emails.length },
+        { name: 'Personal', count: 0 },
+        { name: 'Updates', count: 0 },
+        { name: 'Finance', count: 0 },
+        { name: 'Promotions', count: 0 },
+      ],
+      sentiments: [
+        { name: 'Positive', count: 0 },
+        { name: 'Neutral', count: emails.length },
+        { name: 'Urgent/Frustrated', count: 0 },
+      ],
+    };
+  }
+}
+
+export interface TimelineEvent {
+  sender: string;
+  date: string;
+  type: 'question' | 'decision' | 'request' | 'update';
+  summary: string;
+}
+
+/**
+ * Analyze all messages in a thread and construct a structured JSON timeline of milestones.
+ */
+export async function parseThreadTimeline(messages: ThreadMessageInput[]): Promise<TimelineEvent[]> {
+  if (!messages.length) return [];
+
+  const formatted = messages
+    .map((m, i) => `Message ${i + 1}:\nFrom: ${m.from}\nSubject: ${m.subject}\nBody: ${m.body}`)
+    .join('\n\n');
+
+  const prompt = [
+    'Analyze the following email thread and construct a chronological timeline of key milestones.',
+    'Milestones should include: questions asked, decisions made, requests for action/information, or important updates.',
+    'Respond ONLY with a valid JSON array matching the schema below. Do not wrap in markdown code blocks or output any conversational text.',
+    '',
+    'JSON schema:',
+    '[',
+    '  {',
+    '    "sender": "Name or email of the person who sent this message",',
+    '    "date": "Optional date or relative time of this message",',
+    '    "type": "question" | "decision" | "request" | "update",',
+    '    "summary": "One sentence summarizing this milestone (e.g. Approved launch for Monday)"',
+    '  }',
+    ']',
+    '',
+    'Email thread:',
+    formatted,
+  ].join('\n');
+
+  let raw = '';
+  try {
+    raw = await callGemini(prompt);
+    const cleaned = raw
+      .replace(/```json\s*/gi, '')
+      .replace(/```\s*/g, '')
+      .trim();
+    return JSON.parse(cleaned) as TimelineEvent[];
+  } catch (err) {
+    console.error('[InboxCommander] parseThreadTimeline failed:', err, { raw });
+    // Return a default fallback timeline where each message is an update node
+    return messages.map((m) => ({
+      sender: ((m.from || '').split('<')[0] || '').trim() || 'Unknown',
+      date: '',
+      type: 'update',
+      summary: m.subject || 'Message update',
+    }));
+  }
+}

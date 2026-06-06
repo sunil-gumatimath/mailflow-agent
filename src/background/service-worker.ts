@@ -25,6 +25,9 @@ import {
   summarizeInbox,
   findPriorityEmails,
   summarizeUnread,
+  evaluateRuleMatch,
+  runAnalytics,
+  parseThreadTimeline,
 } from './ai-provider';
 import type { InboxEmailInput } from './ai-provider';
 
@@ -38,7 +41,8 @@ import {
   getSettings,
   clearActionLog,
 } from './action-queue';
-import type { ExtensionResponse, ThreadMessageInput } from '../shared/types';
+import { getRules } from '../shared/storage';
+import type { ExtensionResponse, ThreadMessageInput, AutoPilotRule } from '../shared/types';
 
 // ── Install / Update ───────────────────────────────────────────────────────────
 
@@ -57,6 +61,15 @@ chrome.runtime.onInstalled.addListener(async (details: chrome.runtime.InstalledD
   if (chrome.sidePanel?.setOptions) {
     await chrome.sidePanel.setOptions({ enabled: true });
   }
+
+  // Set up background alarm for auto-pilot rules checking (every 15 minutes)
+  chrome.alarms.create('check_autopilot', { periodInMinutes: 15 });
+});
+
+// MV3 edge case: alarms can be lost across browser restarts. Re-register on startup
+// so the autopilot tick keeps firing after the user restarts Chrome.
+chrome.runtime.onStartup.addListener(() => {
+  chrome.alarms.create('check_autopilot', { periodInMinutes: 15 });
 });
 // ── Central message router ─────────────────────────────────────────────────────
 
@@ -398,9 +411,21 @@ async function handleMessage(message: any): Promise<ExtensionResponse> {
         const sanitized = sanitizeForAI(resolved.body ?? '');
         const settings = await getSettings();
         const baseInstruction = data.instruction ?? message.instruction ?? 'Draft a reply.';
-        const toneInstruction = settings.writingTone
-          ? `Use a ${settings.writingTone} tone. ${baseInstruction}`
-          : baseInstruction;
+        
+        const tone = data.tone ?? message.tone ?? settings.writingTone ?? 'professional';
+        const length = data.length ?? message.length ?? 'medium';
+        
+        let lengthInstruction = '';
+        if (length === 'short') {
+          lengthInstruction = 'Keep the reply extremely short and direct (1-2 sentences).';
+        } else if (length === 'long') {
+          lengthInstruction = 'Write a detailed, thorough response addressing all points in detail, including appropriate greetings and closings.';
+        } else {
+          lengthInstruction = 'Keep the reply moderate in length (1-2 short paragraphs).';
+        }
+
+        const toneInstruction = `Use a ${tone} tone. ${lengthInstruction} ${baseInstruction}`;
+
         const replyBody = await draftReply(
           sanitized,
           resolved.subject,
@@ -573,6 +598,36 @@ async function handleMessage(message: any): Promise<ExtensionResponse> {
         return createResponse(true, { cleared: true });
       }
 
+      case MESSAGE_TYPES.RUN_AUTOPILOT: {
+        await checkAutopilotRules();
+        return createResponse(true, { success: true });
+      }
+
+      case MESSAGE_TYPES.GET_ANALYTICS: {
+        const maxResults = data.maxResults ?? message.maxResults ?? 50;
+        const emails = await fetchInboxForAI('label:INBOX', maxResults);
+        const report = await runAnalytics(emails);
+        return createResponse(true, report);
+      }
+
+      case MESSAGE_TYPES.GET_THREAD_TIMELINE: {
+        const threadId = data.threadId ?? message.threadId;
+        if (!threadId) {
+          throw new Error('Thread ID is required to fetch a timeline.');
+        }
+        const thread = await gmailApi.getThread(threadId);
+        const messagesList = (thread?.messages ?? []).map((m: any) => {
+          const headers = extractHeaders(m.payload?.headers);
+          return {
+            from: headers['from'] || '',
+            subject: headers['subject'] || '',
+            body: sanitizeForAI(parseEmailBody(m.payload)),
+          };
+        });
+        const timeline = await parseThreadTimeline(messagesList);
+        return createResponse(true, { timeline });
+      }
+
       // ── Context broadcasts (handled by the side panel) ─────────────────────
       case MESSAGE_TYPES.EMAIL_CONTEXT_UPDATE:
       case MESSAGE_TYPES.EMAIL_CONTEXT_CLEAR:
@@ -588,5 +643,204 @@ async function handleMessage(message: any): Promise<ExtensionResponse> {
   } catch (err: any) {
     console.error(`[InboxCommander] Error handling ${type}:`, err);
     return createResponse(false, null, err.message);
+  }
+}
+
+// ── Alarms & Background Processing ─────────────────────────────────────────────
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'check_autopilot') {
+    checkAutopilotRules().catch((err) => {
+      console.error('[InboxCommander] Error running background autopilot rules:', err);
+    });
+  }
+});
+
+// ── Autopilot helpers ──────────────────────────────────────────────────────────
+
+export interface AutopilotEmailInput {
+  id: string;
+  subject: string;
+  from: string;
+  body: string;
+}
+export interface QueuedActionInput {
+  type: 'ARCHIVE_EMAIL' | 'MARK_READ' | 'STAR_EMAIL' | 'LABEL_EMAIL';
+  messageId: string;
+  labelId?: string;
+  reason: string;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+}
+export const MAX_EMAILS_PER_TICK = 20;
+export const MAX_ACTIONS_PER_RULE_PER_RUN = 4;
+
+function actionKey(type: string, messageId: string, labelId: string | null = null): string {
+  return `${type}:${messageId}:${labelId ?? ''}`;
+}
+
+/**
+ * Pure-ish planner: given a batch of emails, a set of rules, and a `matches`
+ * predicate, return the list of actions that should be queued.
+ *
+ *  - Caps the input batch at MAX_EMAILS_PER_TICK.
+ *  - Skips disabled rules.
+ *  - Deduplicates across rules by (type, messageId, labelId) — two rules
+ *    that both fire `archive: true` for the same email yield ONE action.
+ *  - Caps the number of actions produced per (rule, message) pair at
+ *    MAX_ACTIONS_PER_RULE_PER_RUN.
+ */
+export async function computeAutopilotActions(
+  messages: AutopilotEmailInput[],
+  rules: AutoPilotRule[],
+  matches: (body: string, subject: string, from: string, filter: string) => Promise<boolean>,
+): Promise<QueuedActionInput[]> {
+  const seen = new Set<string>();
+  const out: QueuedActionInput[] = [];
+  const capped = messages.slice(0, MAX_EMAILS_PER_TICK);
+
+  for (const msg of capped) {
+    for (const rule of rules) {
+      if (!rule.enabled) continue;
+      const matched = await matches(msg.body, msg.subject, msg.from, rule.filter);
+      if (!matched) continue;
+      let perRule = 0;
+      const tryQueue = (a: QueuedActionInput) => {
+        if (perRule >= MAX_ACTIONS_PER_RULE_PER_RUN) return;
+        const k = actionKey(a.type, a.messageId, a.labelId ?? null);
+        if (seen.has(k)) return;
+        seen.add(k);
+        out.push(a);
+        perRule++;
+      };
+      if (rule.actions.archive) {
+        tryQueue({
+          type: 'ARCHIVE_EMAIL',
+          messageId: msg.id,
+          reason: `Auto-pilot: matched "${rule.name}"`,
+          riskLevel: 'MEDIUM',
+        });
+      }
+      if (rule.actions.markRead) {
+        tryQueue({
+          type: 'MARK_READ',
+          messageId: msg.id,
+          reason: `Auto-pilot: matched "${rule.name}"`,
+          riskLevel: 'MEDIUM',
+        });
+      }
+      if (rule.actions.star) {
+        tryQueue({
+          type: 'STAR_EMAIL',
+          messageId: msg.id,
+          reason: `Auto-pilot: matched "${rule.name}"`,
+          riskLevel: 'LOW',
+        });
+      }
+      if (rule.actions.labelId) {
+        tryQueue({
+          type: 'LABEL_EMAIL',
+          messageId: msg.id,
+          labelId: rule.actions.labelId,
+          reason: `Auto-pilot: matched "${rule.name}"`,
+          riskLevel: 'MEDIUM',
+        });
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Periodically evaluate recent incoming messages against active natural language rules,
+ * queuing label or archive actions.
+ */
+async function checkAutopilotRules(): Promise<void> {
+  try {
+    const apiKey = await getApiKey();
+    if (!apiKey) {
+      console.warn('[InboxCommander] Autopilot check skipped: Gemini API key is not configured.');
+      return;
+    }
+
+    const rules = (await getRules()).filter((r) => r.enabled);
+    if (rules.length === 0) {
+      return;
+    }
+
+    const authenticated = await isAuthenticated();
+    if (!authenticated) {
+      console.warn('[InboxCommander] Autopilot check skipped: Gmail account is not authenticated.');
+      return;
+    }
+
+    // Load processed email IDs to avoid evaluating the same email twice
+    const { autopilot_processed } = (await chrome.storage.local.get('autopilot_processed')) as {
+      autopilot_processed?: string[];
+    };
+    const processedIds = new Set(autopilot_processed ?? []);
+
+    // Fetch the last MAX_EMAILS_PER_TICK emails in the inbox
+    const stubs = await gmailApi.listMessages('label:INBOX', MAX_EMAILS_PER_TICK);
+    const newStubs = stubs.filter((s) => !processedIds.has(s.id));
+
+    if (newStubs.length === 0) {
+      return;
+    }
+
+    // Hydrate stubs into planner inputs. Track which IDs were successfully
+    // hydrated so we can mark them processed below (failed hydration leaves
+    // them unprocessed for the next tick to retry).
+    const emailInputs: AutopilotEmailInput[] = [];
+    const hydratedIds: string[] = [];
+    for (const stub of newStubs) {
+      try {
+        const msg = await gmailApi.getMessage(stub.id);
+        const headers = extractHeaders(msg.payload?.headers);
+        const subject = headers['subject'] || '';
+        const from = headers['from'] || '';
+        const body = parseEmailBody(msg.payload);
+        const sanitized = sanitizeForAI(body);
+        emailInputs.push({ id: stub.id, subject, from, body: sanitized });
+        hydratedIds.push(stub.id);
+      } catch (err) {
+        console.error(`[InboxCommander] Autopilot failed to hydrate email ${stub.id}:`, err);
+      }
+    }
+
+    const queuedActions = await computeAutopilotActions(emailInputs, rules, evaluateRuleMatch);
+
+    for (const action of queuedActions) {
+      try {
+        console.log(
+          `[InboxCommander] Autopilot matched: ${action.reason} (${action.type} for ${action.messageId})`,
+        );
+        const params: Record<string, string> = { messageId: action.messageId };
+        if (action.type === 'LABEL_EMAIL' && action.labelId) {
+          params.labelId = action.labelId;
+        }
+        await queueAction({
+          type: action.type,
+          params,
+          reason: action.reason,
+          riskLevel: action.riskLevel,
+        });
+      } catch (err) {
+        console.error(
+          `[InboxCommander] Autopilot failed to queue action for ${action.messageId}:`,
+          err,
+        );
+      }
+    }
+
+    // Mark only successfully-hydrated emails as processed — leave the rest
+    // for the next tick to retry.
+    for (const id of hydratedIds) processedIds.add(id);
+
+    // Persist processed email IDs (rolling window)
+    // Cap at 1000 IDs — at 20 emails per 15-min tick, that's ~12 hours of dedup coverage.
+    const updatedProcessed = Array.from(processedIds).slice(-1000);
+    await chrome.storage.local.set({ autopilot_processed: updatedProcessed });
+  } catch (globalErr) {
+    console.error('[InboxCommander] Global autopilot process exception:', globalErr);
   }
 }

@@ -82,3 +82,17 @@ export interface ThreadMessageInput {
   subject: string;
   body: string;
 }
+
+export interface AutoPilotRule {
+  id: string;
+  name: string;
+  filter: string;
+  actions: {
+    archive: boolean;
+    markRead: boolean;
+    star: boolean;
+    labelId: string | null;
+  };
+  enabled: boolean;
+  createdAt: number;
+}

@@ -40,6 +40,14 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           Preferences
         </a>
+        <a href="#section-autopilot" class="nav-link" data-section="section-autopilot">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          Auto-Pilot
+        </a>
+        <a href="#section-dashboard" class="nav-link" data-section="section-dashboard">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Dashboard
+        </a>
         <a href="#section-account" class="nav-link" data-section="section-account">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           Account
@@ -178,6 +186,133 @@
                 Light
               </button>
             </fieldset>
+          </div>
+        </div>
+      </section>
+
+      <!-- Auto-Pilot Rules -->
+      <section class="card" id="section-autopilot">
+        <div class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          <h2>Auto-Pilot Rules</h2>
+        </div>
+        <p class="card-desc">Define natural language rules for incoming emails. InboxCommander will periodically process them in the background.</p>
+        
+        <div class="field-row" style="margin-bottom: 16px; justify-content: flex-end; gap: 8px;">
+          <button class="btn btn-outline" id="runRulesBtn" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Run Rules Now
+          </button>
+          <button class="btn btn-primary" id="newRuleBtn" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Create New Rule
+          </button>
+        </div>
+
+        <div id="rulesList" class="rules-list-container">
+          <div class="empty-state">
+            <span>No automation rules configured yet.</span>
+          </div>
+        </div>
+
+        <!-- Rule creation modal overlay -->
+        <div class="modal-backdrop" id="ruleModal" hidden>
+          <div class="modal-content">
+            <h3 id="modalTitle">Create Auto-Pilot Rule</h3>
+            <div class="field">
+              <label for="ruleNameInput">Rule Name</label>
+              <input type="text" id="ruleNameInput" placeholder="e.g., Invoice Organizer" required />
+            </div>
+            <div class="field">
+              <label for="ruleFilterInput">Natural Language Filter (AI evaluates this)</label>
+              <textarea id="ruleFilterInput" rows="3" placeholder="e.g., Any email about an invoice, billing statement, receipt, or subscription payment" required></textarea>
+            </div>
+            
+            <div class="field">
+              <label>Actions to Execute</label>
+              <div class="checkbox-group">
+                <label class="checkbox-row">
+                  <input type="checkbox" id="actionArchive" />
+                  <span>Archive email (remove from Inbox)</span>
+                </label>
+                <label class="checkbox-row">
+                  <input type="checkbox" id="actionMarkRead" />
+                  <span>Mark email as read</span>
+                </label>
+                <label class="checkbox-row">
+                  <input type="checkbox" id="actionStar" />
+                  <span>Star email</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="actionLabelSelect">Apply Gmail Label</label>
+              <select id="actionLabelSelect">
+                <option value="">(None)</option>
+              </select>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline" id="cancelRuleBtn">Cancel</button>
+              <button type="button" class="btn btn-primary" id="saveRuleBtn">Save Rule</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Analytics Dashboard -->
+      <section class="card" id="section-dashboard">
+        <div class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <h2>Inbox Analytics & Sentiment</h2>
+        </div>
+        <p class="card-desc">AI-powered analytics from your latest emails.</p>
+
+        <div class="field-row" style="margin-bottom: 20px; justify-content: flex-end; gap: 8px;">
+          <span class="status-text" id="dashboardStatus" style="font-size: 12px; color: var(--text-muted);"></span>
+          <button class="btn btn-outline" id="refreshDashboardBtn" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            Refresh Dashboard
+          </button>
+        </div>
+
+        <div id="dashboardLoading" class="empty-state" hidden>
+          <div class="loading-dots"><span></span><span></span><span></span></div>
+          <span>Analyzing your inbox metrics...</span>
+        </div>
+
+        <div id="dashboardContent">
+          <!-- Summary Cards -->
+          <div class="metrics-summary-grid">
+            <div class="metric-card">
+              <span class="metric-label">Emails Analyzed</span>
+              <span class="metric-value" id="metricCount">0</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Urgent Emails</span>
+              <span class="metric-value" id="metricUrgentCount">0</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Overall Mood</span>
+              <span class="metric-value" id="metricOverallMood">—</span>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="charts-row">
+            <div class="chart-box">
+              <h3>Category Breakdown</h3>
+              <div class="bar-chart-container" id="categoryChart">
+                <div class="empty-state" style="padding: 12px 0;">No metrics available. Click Refresh.</div>
+              </div>
+            </div>
+            <div class="chart-box">
+              <h3>Sentiment Distribution</h3>
+              <div class="bar-chart-container" id="sentimentChart">
+                <div class="empty-state" style="padding: 12px 0;">No metrics available. Click Refresh.</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
