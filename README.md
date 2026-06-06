@@ -10,6 +10,8 @@ AI-powered Gmail assistant as a Chrome extension (Manifest V3). Reads, summarize
 - **Auto-prioritize** what's worth reading first
 - **Bulk actions**: archive, label, mark read, trash — gated by risk level
 - **Side panel** chat agent with full inbox context
+- **Auto-Pilot rules** — natural-language filters (e.g. "newsletters from vendors I haven't ordered from in 6 months") evaluated by Gemini; matching mail gets archived / labeled / marked read automatically under a dedicated low-risk policy
+- **Inbox dashboard** — unread count, urgent-mail breakdown, sentiment chart, and thread-timeline view
 - **Bring-your-own Gemini key** — no backend, no signup, your data stays local
 
 ## How it works
@@ -19,22 +21,22 @@ The extension is a privacy-respecting two-token system:
 - **Google OAuth** (built-in): authenticates you to your own Gmail via `chrome.identity`
 - **Gemini API key** (you provide): used for AI features, stored in `chrome.storage.local`
 
-No data leaves your browser except direct calls to Google APIs you authorize.
+No data leaves your browser except direct calls to Google APIs you authorize (`gmail.googleapis.com`, `generativelanguage.googleapis.com`).
 
 ## Setup
 
 ### 1. Prerequisites
 
 - [Bun](https://bun.sh) **1.0+** (used as both the package manager and the test runner)
-- Chrome / Edge / Brave (any Chromium browser)
+- Chrome / Edge / Brave (any Chromium browser that supports Manifest V3)
 
 ### 2. Get a Google OAuth client ID (one-time per fork)
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a project (or use existing)
-3. **APIs & Services** -> **Library** -> enable **Gmail API**
-4. **APIs & Services** -> **OAuth consent screen** -> configure (External, add the Gmail scopes below, add yourself as a test user)
-5. **APIs & Services** -> **Credentials** -> **Create credentials** -> **OAuth client ID**
+3. **APIs & Services** → **Library** → enable **Gmail API**
+4. **APIs & Services** → **OAuth consent screen** → configure (External, add the Gmail scopes below, add yourself as a test user)
+5. **APIs & Services** → **Credentials** → **Create credentials** → **OAuth client ID**
    - Application type: **Chrome extension** (not Web application)
    - Item ID: paste your unpacked extension's ID from `chrome://extensions`
 6. Copy the generated `....apps.googleusercontent.com` value
@@ -60,30 +62,69 @@ bun install
 bun run build
 ```
 
-Then `chrome://extensions` -> enable **Developer mode** -> **Load unpacked** -> select the project root folder.
+Then `chrome://extensions` → enable **Developer mode** → **Load unpacked** → select the project root folder.
 
 ### 4. Configure
 
-- Right-click the extension icon -> **Options**
+- Right-click the extension icon → **Options**
 - Paste your **Gemini API key** (get one free at [aistudio.google.com](https://aistudio.google.com/apikey))
+- Pick a model (default: `gemini-2.5-flash`; 2.0 / 2.5 / 3-preview variants are all available — see [Supported models](#supported-models))
 - Click **Test API Key** to verify
 - Click **Sign in with Google** to connect your Gmail
 - Save
 
 That's it. Open Gmail and click the extension icon to start.
 
+## Supported actions
+
+| Action          | Risk level | Approval default            | Notes                                                       |
+| --------------- | ---------- | --------------------------- | ----------------------------------------------------------- |
+| `ARCHIVE`       | LOW        | Auto (configurable)         | Removes `INBOX` label                                       |
+| `MARK_READ`     | LOW        | Auto (configurable)         | Removes `UNREAD` label                                      |
+| `LABEL`         | LOW        | Auto (configurable)         | Adds a Gmail label id                                       |
+| `STAR`          | LOW        | Auto (configurable)         | Adds `STARRED`                                              |
+| `BATCH_MODIFY`  | MEDIUM     | Required                    | Bulk label/archive/mark-read                                |
+| `DRAFT_REPLY`   | MEDIUM     | Required                    | Creates a draft — never sends                                |
+| `CREATE_DRAFT`  | MEDIUM     | Required                    | Same as above                                               |
+| `TRASH`         | HIGH       | Required                    | Moves to Gmail trash (recoverable for 30 days)              |
+| `SEND_EMAIL`    | HIGH       | Required                    | Sends a real message — irreversible                         |
+
+Risk level and per-level approval are configured on the settings page. Defaults: `low` auto-executes, `medium` and `high` always require explicit approval.
+
+## Auto-Pilot rules
+
+Auto-Pilot lets you describe a filter in plain English. InboxCommander sends the filter and the message metadata to Gemini, which returns `YES` or `NO`. On `YES` the rule's actions (`archive`, `markRead`, `star`, `labelId`) are queued and executed under the rule's own approval policy. Failed evaluations fall back to a `false` (no match) and never crash the queue.
+
+Add and toggle rules from **Settings → Auto-Pilot**.
+
+## Supported models
+
+The settings page exposes the current Gemini Developer API lineup. The full list is exported from `src/shared/constants.ts` as `GEMINI_MODELS`; the default is `DEFAULT_GEMINI_MODEL` = `gemini-2.5-flash`.
+
+| Model id                       | Display label              |
+| ------------------------------ | -------------------------- |
+| `gemini-3-pro-preview`         | Gemini 3 Pro (Preview)     |
+| `gemini-3-flash-preview`       | Gemini 3 Flash (Preview)   |
+| `gemini-2.5-pro`               | Gemini 2.5 Pro             |
+| `gemini-2.5-flash`             | Gemini 2.5 Flash (default) |
+| `gemini-2.5-flash-lite`        | Gemini 2.5 Flash-Lite      |
+| `gemini-2.0-flash`             | Gemini 2.0 Flash           |
+| `gemini-2.0-flash-lite`        | Gemini 2.0 Flash-Lite      |
+
 ## Development
 
 ```bash
 bun run dev              # Vite watch mode
 bun run typecheck        # tsc --noEmit (strict)
-bun run test             # Vitest (one-shot)
+bun run test             # Vitest (one-shot) — 108 tests across 13 files
 bun run test:watch       # Vitest watch
 bun run test:coverage    # Vitest with v8 coverage
 bun run lint             # ESLint 9 flat config
 bun run format           # Prettier write
 bun run format:check     # Prettier check (used in CI)
 bun run build            # typecheck + Vite production build
+bun run setup            # copy .env.example → .env
+bun run clean            # remove built artifacts at repo root
 ```
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full contributor guide, [`CHANGELOG.md`](CHANGELOG.md) for what changed recently, and [`SECURITY.md`](SECURITY.md) for the security policy and how to report vulnerabilities.
@@ -92,11 +133,11 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full contributor guide, [`CHANG
 
 ```
 src/
-  background/        # service worker (Gmail API, AI, action queue)
+  background/        # service worker (Gmail API, AI, action queue, auth)
   content/           # content script injected into mail.google.com
   popup/             # toolbar popup
-  sidepanel/         # persistent side panel chat UI
-  options/           # settings page
+  sidepanel/         # persistent side panel chat UI + dashboard
+  options/           # settings page (API key, model, Auto-Pilot rules, log)
   shared/            # types, constants, utils, storage, messaging, escape, markdown, retry
 src/manifest.json    # extension manifest (source of truth)
 
@@ -113,6 +154,8 @@ CHANGELOG.md         # release notes
 CONTRIBUTING.md      # contributor guide
 SECURITY.md          # security policy & vulnerability reporting
 ```
+
+`src/shared/` is the single place for code reused across surfaces (popup, options, sidepanel, content, service worker). If you find yourself copy-pasting logic between them, extract it to `shared/` instead.
 
 ## CI
 
@@ -154,10 +197,10 @@ git push origin v1.0.0
 Add `GOOGLE_OAUTH_CLIENT_ID` as a repository secret first (Settings → Secrets and variables → Actions → New repository secret). The workflow will:
 
 1. Sync the manifest version to the tag (e.g. tag `v1.2.3` writes `"version": "1.2.3"` into `src/manifest.json`)
-2. Run typecheck
-3. Build the extension with your real OAuth client ID injected
-4. Convert the source SVG icon into 16/48/128 PNGs for the store listing (requires `rsvg-convert` on the runner — installed by default on Ubuntu)
-5. Upload a `inboxcommander-vX.Y.Z.zip` and PNG icons to a draft GitHub release
+2. Run the full `bun run build` with your real OAuth client ID injected
+3. Package the built extension into `inboxcommander-vX.Y.Z.zip` (the `manifest.json` + `service-worker-loader.js` + the built `assets/`, `content/`, `options/`, `popup/`, `sidepanel/` directories)
+4. Stage store-listing icons (16/48/128 PNGs derived from `src/assets/icons/logo.png`)
+5. Upload the zip and icons to a **draft** GitHub release (prerelease tag if the tag contains a `-`)
 
 ### 3. Upload to the Chrome Web Store
 
@@ -183,7 +226,7 @@ PNG versions are required by the Chrome Web Store listing.
 
 ## Contributing
 
-Pull requests welcome. For major changes, open an issue first.
+Pull requests welcome. For major changes, open an issue first. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup, testing, and PR conventions.
 
 ## License
 
